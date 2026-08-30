@@ -1,0 +1,195 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  useIamRoles,
+  useIamPolicies,
+  useCreateRole,
+  useDeleteRole,
+} from '@/hooks/use-iam';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, Plus, Trash2, FileCode2, AlertCircle } from 'lucide-react';
+
+export default function RolesManagementPage() {
+  const { data: roles, isLoading, refetch } = useIamRoles();
+  const { data: policies } = useIamPolicies();
+  const createRoleMutation = useCreateRole();
+  const deleteRoleMutation = useDeleteRole();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedPolicies, setSelectedPolicies] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      await createRoleMutation.mutateAsync({
+        name,
+        description: description || undefined,
+        policyIds: selectedPolicies,
+      });
+      setName('');
+      setDescription('');
+      setSelectedPolicies([]);
+      setShowCreate(false);
+      refetch();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create role');
+    }
+  };
+
+  const handleDelete = async (roleId: string, roleName: string) => {
+    if (confirm(`Are you sure you want to delete role '${roleName}'?`)) {
+      await deleteRoleMutation.mutateAsync(roleId);
+      refetch();
+    }
+  };
+
+  const togglePolicy = (policyId: string) => {
+    setSelectedPolicies((prev) =>
+      prev.includes(policyId) ? prev.filter((id) => id !== policyId) : [...prev, policyId]
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+            <span>IAM Roles</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Bundle policies into reusable roles that can be assigned to multiple users
+          </p>
+        </div>
+
+        <Button onClick={() => setShowCreate(!showCreate)} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          {showCreate ? 'Cancel' : 'Create Role'}
+        </Button>
+      </div>
+
+      {/* Create Role Form */}
+      {showCreate && (
+        <Card className="border-primary/20">
+          <form onSubmit={handleCreate}>
+            <CardHeader>
+              <CardTitle className="text-base">Create New IAM Role</CardTitle>
+              <CardDescription>Define role name and attach initial policies</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground">Role Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. AUDITOR"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground">Description</label>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Description of role responsibilities"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  />
+                </div>
+              </div>
+
+              {policies && policies.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground">Attach Policies</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md bg-muted/20">
+                    {policies.map((pol) => (
+                      <label
+                        key={pol.id}
+                        className="flex items-center gap-2 p-1.5 rounded hover:bg-muted text-xs cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPolicies.includes(pol.id)}
+                          onChange={() => togglePolicy(pol.id)}
+                          className="rounded border-input text-primary"
+                        />
+                        <span className="font-medium">{pol.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm">
+                  Create Role
+                </Button>
+              </div>
+            </CardContent>
+          </form>
+        </Card>
+      )}
+
+      {/* Roles List */}
+      <div className="grid grid-cols-1 gap-4">
+        {isLoading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading roles...</div>
+        ) : !roles || roles.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">No roles configured.</div>
+        ) : (
+          roles.map((role) => (
+            <Card key={role.id}>
+              <CardHeader className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">{role.name}</CardTitle>
+                    {role.isSystem && (
+                      <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                        System Default
+                      </Badge>
+                    )}
+                  </div>
+                  {!role.isSystem && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(role.id, role.name)}
+                      className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  )}
+                </div>
+                {role.description && (
+                  <CardDescription className="text-xs mt-1">{role.description}</CardDescription>
+                )}
+              </CardHeader>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
