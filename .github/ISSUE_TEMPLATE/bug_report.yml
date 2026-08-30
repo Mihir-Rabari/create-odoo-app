@@ -1,0 +1,54 @@
+name: Bug Report
+description: Create a report to help us fix an issue or bug in create-odoo-app.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        *If this is a security vulnerability, please do NOT use this form. Submit a report via [Security Advisories](https://github.com/Mihir-Rabari/create-odoo-app/security/advisories/new).*
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment Info
+      description: What OS, Node.js version, and pnpm version are you using?
+      placeholder: "e.g., Windows 11 / Ubuntu 24.04, Node 22.14.0, pnpm 11.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is.
+      placeholder: "When running create-odoo-app with..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Run 'npx create-odoo-app my-app'
+        2. Execute '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terminal Logs / Error Output
+      description: Paste relevant command output or logs (ensure sensitive secrets are omitted).
+      render: shell

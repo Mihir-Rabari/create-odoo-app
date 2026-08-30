@@ -1,6 +1,11 @@
 # create-odoo-app
 
-A production-grade npm project generator that scaffolds full-stack monorepo applications built with **Next.js (App Router)**, **Fastify**, **PostgreSQL (Drizzle ORM)**, **Redis**, **S3-compatible Object Storage (MinIO)**, **Prometheus/Grafana Observability**, and a complete **Identity, Authentication & IAM Authorization System**.
+[![CI](https://github.com/Mihir-Rabari/create-odoo-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Mihir-Rabari/create-odoo-app/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node: >=22.13.0](https://img.shields.io/badge/Node-%3E%3D22.13.0-brightgreen.svg)](package.json)
+[![pnpm: 11.1.0](https://img.shields.io/badge/pnpm-11.1.0-orange.svg)](package.json)
+
+A production-grade npm project generator that scaffolds full-stack monorepo applications built with **Next.js (App Router)**, **Fastify**, **PostgreSQL (Drizzle ORM)**, **Redis**, **S3-compatible Object Storage (MinIO)**, **Prometheus/Grafana Observability**, and an **Identity, Authentication & IAM Authorization System**.
 
 ---
 
@@ -88,7 +93,7 @@ The generated project exposes a configuration layer in `packages/config/src/`:
 
 ## 5. Agent Skills Architecture & Discovery (`skills/*`)
 
-The project provides 13 reusable Agent Skills aligned with the **Agent Skills open standard**, cataloged in the machine-readable registry [`skills/index.yaml`](skills/index.yaml):
+The project provides 14 reusable Agent Skills aligned with the **Agent Skills open standard**, cataloged in the machine-readable registry [`skills/index.yaml`](skills/index.yaml):
 
 * [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md): Monorepo structure, package boundaries, layering rules.
 * [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md): Session lifecycle, scrypt hashing, cookies, auth events.
@@ -145,6 +150,7 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 | `pnpm test:coverage` | Run Vitest test suite with v8 code coverage analysis |
 | `pnpm test:smoke` | Run generator smoke test in a temporary directory |
 | `pnpm test:dogfood` | Execute full unpacked generator dogfooding test |
+| `pnpm audit:security`| Scan workspace and git history for credentials and machine paths |
 | `pnpm deps:check` | Audit direct external dependencies inventory |
 | `pnpm skills:check` | Validate Agent Skills registry, frontmatter, and links |
 | `pnpm skills:lint` | Run structural linter across all skill files |
@@ -168,7 +174,7 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 ## 8. Release Engineering, CI/CD & Publishing
 
 ### Automated CI/CD Pipeline
-- **Continuous Integration (`.github/workflows/ci.yml`)**: Runs on pull requests and pushes to `main`. Tests on Ubuntu and Windows across Node.js 20.x and 22.x with dependency caching and full quality gates (`pnpm verify`).
+- **Continuous Integration (`.github/workflows/ci.yml`)**: Runs on pull requests and pushes to `main`. Tests on Ubuntu and Windows across Node.js 22.x with dependency caching and full quality gates (`pnpm verify`).
 - **Release Automation (`.github/workflows/release.yml`)**: Automatically triggers on Git tags (`v*.*.*`) or manual trigger. Builds, audits package contents for leaks, publishes to npm with `--access public --provenance`, and generates a GitHub Release.
 
 ### Semantic Versioning Policy
@@ -182,3 +188,12 @@ Before publishing or tagging a release, run:
 pnpm release:check
 ```
 This builds all packages, packages the `.tgz` artifact via `npm pack`, scans the tarball contents to guarantee zero leaked secrets or local machine paths, unpacks into a clean temporary directory, and runs the generator from the unpacked distribution to verify the generated application.
+
+---
+
+## 9. Community, Security & Contributing
+
+- **[Contributing Guide](CONTRIBUTING.md)**: Instructions for submitting bug reports, features, and pull requests.
+- **[Code of Conduct](CODE_OF_CONDUCT.md)**: Community participation guidelines (Contributor Covenant v2.1).
+- **[Security Policy](SECURITY.md)**: Instructions for responsibly disclosing security vulnerabilities.
+- **[License](LICENSE)**: MIT License.

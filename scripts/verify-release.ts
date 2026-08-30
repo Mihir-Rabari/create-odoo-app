@@ -60,8 +60,9 @@ async function verifyRelease(): Promise<void> {
     }
     console.log(`[Release Gate] ✔ Package version verified: ${rootPkg.name}@${rootPkg.version}`);
 
-    // 2. Validate Skills Standard & Packaging
-    console.log('\n[Release Gate] 📋 Step 2: Validating Agent Skills standard, linting & packaging...');
+    // 2. Validate Skills Standard, Packaging & Security Audit
+    console.log('\n[Release Gate] 📋 Step 2: Validating Agent Skills standard, security audit & packaging...');
+    execSync('pnpm audit:security', { cwd: rootDir, stdio: 'inherit' });
     execSync('pnpm skills:check', { cwd: rootDir, stdio: 'inherit' });
     execSync('pnpm skills:lint', { cwd: rootDir, stdio: 'inherit' });
     execSync('pnpm skills:pack --all', { cwd: rootDir, stdio: 'inherit' });

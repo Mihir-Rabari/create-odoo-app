@@ -1,0 +1,8 @@
+# Global repository owner
+* @Mihir-Rabari
+
+# Critical Security & Release Subsystems
+/.github/workflows/ @Mihir-Rabari
+/packages/auth/ @Mihir-Rabari
+/packages/iam/ @Mihir-Rabari
+/scripts/ @Mihir-Rabari

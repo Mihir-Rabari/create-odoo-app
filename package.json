@@ -91,6 +91,7 @@
     "test:smoke": "tsx scripts/smoke-test.ts",
     "test:dogfood": "tsx scripts/dogfood-test.ts",
     "test:security": "vitest run packages/auth packages/iam apps/api",
+    "audit:security": "tsx scripts/security-audit.ts",
     "deps:check": "tsx scripts/check-deps.ts",
     "skills:check": "tsx scripts/check-skills.ts",
     "skills:lint": "tsx scripts/check-skills.ts --lint",
