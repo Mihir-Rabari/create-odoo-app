@@ -39,12 +39,25 @@ jobs:
           corepack prepare pnpm@11.1.0 --activate
         shell: bash
 
-      - name: Verify Environment Bootstrap
+      - name: Verify Environment Bootstrap & Release Runtime
         run: |
-          echo "=== Node & Package Manager Bootstrap Information ==="
+          echo "=== Node, npm & Package Manager Release Runtime Information ==="
           node --version
+          npm --version
           pnpm --version
           corepack --version
+        shell: bash
+
+      - name: Validate Release Tag Invariants
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Git tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
+            exit 1
+          fi
+          echo "✔ Git tag v$TAG_VERSION matches package.json version $PKG_VERSION"
         shell: bash
 
       - name: Install Dependencies
@@ -53,9 +66,13 @@ jobs:
       - name: Full Quality Gate & Pre-Release Verification
         run: pnpm release:check
 
-      - name: Publish to npm
+      - name: Publish to npm Registry
         if: ${{ !inputs.dry_run }}
-        run: npm publish --access public --provenance
+        run: |
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          fi
+          npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
