@@ -1,6 +1,6 @@
 # AGENTS.md — Repository Operating Manual
 
-> **Scope**: Operating instructions, architectural rules, testing doctrine, skill discovery, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
+> **Scope**: Operating instructions, architectural rules, testing doctrine, skill discovery, skill packaging, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
 
 ---
 
@@ -99,8 +99,15 @@ pnpm dev              # Launch web and api concurrently
 pnpm dev:api          # Launch Fastify API in watch mode
 pnpm dev:web          # Launch Next.js web application
 
-# Quality Verification & Testing
+# Agent Skills Management & Packaging
+pnpm skills:list      # List all 13 canonical skills with descriptions
+pnpm skills:show <n>  # Display metadata and content for a skill
 pnpm skills:check     # Validate Agent Skills registry, frontmatter, and links
+pnpm skills:lint      # Structural markdown and frontmatter linter
+pnpm skills:pack      # Package skills into deterministic ZIP archives in dist/skills/
+pnpm skills:export    # Export standalone clean skill directories in dist/skills/
+
+# Quality Verification & Testing
 pnpm test             # Run Vitest test suite across all packages
 pnpm test:coverage    # Run Vitest test suite with v8 coverage analysis
 pnpm test:smoke       # Run generator smoke test in temporary directory
@@ -138,17 +145,33 @@ pnpm health           # Run end-to-end infrastructure health check
 
 ---
 
-## 6. Agent Skills Standard & Discovery Workflow
+## 6. Agent Skills Standard, Discovery & Composition
 
-This repository provides 13 standardized Agent Skills under `skills/`. Use `skills/index.yaml` as the machine-readable discovery registry.
+This repository provides 13 standardized Agent Skills under `skills/` following the **Agent Skills open standard**. Use `skills/index.yaml` as the machine-readable discovery registry.
+
+### Repository Guidance vs Skill Bundles
+- **`AGENTS.md`**: Persistent repository operating manual describing architecture, commands, and rules.
+- **`skills/*/`**: Portable, self-contained workflow instruction bundles that can be individually loaded by agents or packaged into ZIP archives for Agent Skills platforms.
 
 ### Targeted Context Loading Workflow
 Before modifying a subsystem:
-1. **Identify**: Review the Skills Index below to find the governing skill.
-2. **Read**: Open and read its `SKILL.md`.
+1. **Identify**: Review the Skills Index below to find the governing skill(s).
+2. **Read**: Open and read the relevant `SKILL.md` file(s).
 3. **Follow Constraints**: Apply the rules, conventions, and invariants documented in the skill.
 4. **Implement & Test**: Add automated tests proving correctness.
 5. **Verify**: Run `pnpm verify` to satisfy all repository quality gates.
+
+### Canonical Skill Composition Matrix
+
+| Task Type | Primary Skills | Supporting Skills |
+| :--- | :--- | :--- |
+| **API Endpoint Development** | [`skills/api/SKILL.md`](skills/api/SKILL.md) | `validation`, `testing`, `security` |
+| **Authentication & Sessions** | [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md) | `security`, `testing` |
+| **IAM, Roles & Permissions** | [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md) | `security`, `database`, `testing` |
+| **Database Schema & Migrations** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | `testing` |
+| **Frontend UI & Forms** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | `authorization`, `testing` |
+| **Observability & Logging** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | `api`, `testing` |
+| **Object Storage & Uploads** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | `validation`, `security`, `testing` |
 
 ### Canonical Skills Index
 

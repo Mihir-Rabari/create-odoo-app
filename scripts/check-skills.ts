@@ -6,13 +6,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-interface SkillIndexEntry {
+export interface SkillIndexEntry {
   name: string;
   path: string;
   description: string;
 }
 
-function parseYamlFrontmatter(content: string): { frontmatter: Record<string, string>; body: string } {
+export function parseYamlFrontmatter(content: string): { frontmatter: Record<string, string>; body: string } {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!match) {
     throw new Error('Missing or invalid YAML frontmatter delimiters (---)');
@@ -39,7 +39,7 @@ function parseYamlFrontmatter(content: string): { frontmatter: Record<string, st
   return { frontmatter, body };
 }
 
-function parseIndexYaml(content: string): SkillIndexEntry[] {
+export function parseIndexYaml(content: string): SkillIndexEntry[] {
   const skills: SkillIndexEntry[] = [];
   const lines = content.split(/\r?\n/);
   let currentSkill: Partial<SkillIndexEntry> | null = null;
@@ -71,8 +71,9 @@ function parseIndexYaml(content: string): SkillIndexEntry[] {
   return skills;
 }
 
-async function validateSkills(): Promise<void> {
-  console.log('\x1b[35m=== Validating Agent Skills & Discovery Registry ===\x1b[0m\n');
+export async function validateSkills(options: { isLint?: boolean } = {}): Promise<SkillIndexEntry[]> {
+  const mode = options.isLint ? 'Linting' : 'Validating';
+  console.log(`\x1b[35m=== ${mode} Agent Skills & Discovery Registry ===\x1b[0m\n`);
 
   const indexPath = path.join(rootDir, 'skills', 'index.yaml');
   if (!fs.existsSync(indexPath)) {
@@ -93,7 +94,7 @@ async function validateSkills(): Promise<void> {
   const devProjectPrefix = ['K:', '\\', 'Projects', '\\', 'create-odoo-app'].join('');
 
   for (const skill of skills) {
-    // 1. Check Name
+    // 1. Check Name format
     if (!skill.name || !/^[a-z0-9-]+$/.test(skill.name)) {
       throw new Error(`Invalid skill name format in index.yaml: "${skill.name}". Must be lowercase alphanumeric.`);
     }
@@ -140,7 +141,12 @@ async function validateSkills(): Promise<void> {
       throw new Error(`Skill body is empty in ${skill.path}`);
     }
 
-    // 4. Check for Leaked Local Machine Paths
+    // 4. Structural Heading Check
+    if (!body.includes('# ') || !body.includes('## ')) {
+      throw new Error(`Skill document in ${skill.path} must contain standard markdown headings (# and ##)`);
+    }
+
+    // 5. Check for Leaked Local Machine Paths
     if (content.includes(winUserPrefix) || content.includes(devProjectPrefix)) {
       throw new Error(`LEAK DETECTED: Hardcoded developer paths found in ${skill.path}`);
     }
@@ -148,10 +154,15 @@ async function validateSkills(): Promise<void> {
     console.log(`  ✔ [${skill.name}] ${skill.path} (valid)`);
   }
 
-  console.log(`\n\x1b[32m✔ All ${skills.length} Agent Skills successfully verified and valid!\x1b[0m\n`);
+  const pastVerb = options.isLint ? 'linted' : 'verified';
+  console.log(`\n\x1b[32m✔ All ${skills.length} Agent Skills successfully ${pastVerb} and valid!\x1b[0m\n`);
+  return skills;
 }
 
-validateSkills().catch((err) => {
-  console.error('\n\x1b[31m✖ Skills validation failed:\x1b[0m', err.message || err);
-  process.exit(1);
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const isLint = process.argv.includes('--lint');
+  validateSkills({ isLint }).catch((err) => {
+    console.error('\n\x1b[31m✖ Skills validation failed:\x1b[0m', err.message || err);
+    process.exit(1);
+  });
+}

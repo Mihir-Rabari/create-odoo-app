@@ -60,9 +60,11 @@ async function verifyRelease(): Promise<void> {
     }
     console.log(`[Release Gate] ✔ Package version verified: ${rootPkg.name}@${rootPkg.version}`);
 
-    // 2. Validate Skills Standard
-    console.log('\n[Release Gate] 📋 Step 2: Validating Agent Skills standard...');
+    // 2. Validate Skills Standard & Packaging
+    console.log('\n[Release Gate] 📋 Step 2: Validating Agent Skills standard, linting & packaging...');
     execSync('pnpm skills:check', { cwd: rootDir, stdio: 'inherit' });
+    execSync('pnpm skills:lint', { cwd: rootDir, stdio: 'inherit' });
+    execSync('pnpm skills:pack --all', { cwd: rootDir, stdio: 'inherit' });
 
     // 3. Build Monorepo & CLI
     console.log('\n[Release Gate] 🔨 Step 3: Compiling all packages and generator CLI...');

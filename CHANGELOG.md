@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automated skill validation tooling (`scripts/check-skills.ts` / `pnpm skills:check`).
   - Localized subtree `AGENTS.md` context files (`apps/api/AGENTS.md`, `apps/web/AGENTS.md`, `packages/auth/AGENTS.md`, `packages/iam/AGENTS.md`, `packages/db/AGENTS.md`).
   - Propagation of skills registry and localized context manuals into generated projects.
+- **Agent Skills Runtime Compatibility, Packaging & Discovery Hardening (Phase 6.1)**:
+  - Deterministic skill bundle packer (`scripts/pack-skills.ts` / `pnpm skills:pack`) outputting clean directory bundles and standard zero-dependency ZIP archives in `dist/skills/` compatible with OpenAI Skills API and portable Agent Skills platform consumption.
+  - Skill CLI utilities: `pnpm skills:list`, `pnpm skills:show <name>`, `pnpm skills:lint`, and `pnpm skills:export`.
+  - Deterministic context discovery & skill packaging automated test suite (`src/skills.test.ts`).
+  - Skill composition matrix and clean separation of repository guidance (`AGENTS.md`) from portable skill bundles (`skills/*/`).
 - **Developer Configuration Surface (`packages/config`)**:
   - `app-config.ts`: Application constants, metadata, pagination limits.
   - `auth-config.ts`: Authentication settings (`registrationEnabled`, `defaultIdentity`, `sessionTtlSeconds`, `cookieName`, `minPasswordLength`).

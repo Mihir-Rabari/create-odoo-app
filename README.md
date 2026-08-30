@@ -104,9 +104,14 @@ The project provides 13 reusable Agent Skills aligned with the **Agent Skills op
 * [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md): Redis Pub/Sub notification events.
 * [`skills/observability/SKILL.md`](skills/observability/SKILL.md): Prometheus metrics, Grafana dashboards, health probes.
 
-Validate skill registry and YAML frontmatter integrity at any time with:
+Validate, list, inspect, and package skills at any time:
 ```bash
-pnpm skills:check
+pnpm skills:list      # List all 13 canonical skills with descriptions
+pnpm skills:show <n>  # Display metadata and content for a skill
+pnpm skills:check     # Validate Agent Skills registry, frontmatter, and links
+pnpm skills:lint      # Structural markdown and frontmatter linter
+pnpm skills:pack      # Package skills into deterministic ZIP archives in dist/skills/
+pnpm skills:export    # Export standalone clean skill directories in dist/skills/
 ```
 
 ---
@@ -138,7 +143,10 @@ pnpm skills:check
 | `pnpm test:security` | Run dedicated IAM & authentication security tests |
 | `pnpm test:coverage` | Run Vitest test suite with v8 code coverage analysis |
 | `pnpm test:smoke` | Run generator smoke test in a temporary directory |
-| `pnpm verify` | Run full local quality gate (lint + typecheck + test + smoke + build) |
+| `pnpm skills:check` | Validate Agent Skills registry, frontmatter, and links |
+| `pnpm skills:lint` | Run structural linter across all skill files |
+| `pnpm skills:pack` | Package skills into deterministic ZIP archives |
+| `pnpm verify` | Run full local quality gate (skills + lint + typecheck + test + smoke + build) |
 | `pnpm verify:release` | Execute pre-release packaging, package audit, and unpacked generator test |
 | `pnpm release:check` | Canonical pre-release verification checklist command |
 | `pnpm typecheck` | Run strict TypeScript verification across all packages + CLI |
