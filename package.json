@@ -63,6 +63,10 @@
     "vitest.config.ts"
   ],
   "packageManager": "pnpm@11.1.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=11.1.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Mihir-Rabari/create-odoo-app.git"
@@ -80,7 +84,7 @@
     "build": "pnpm --filter \"@packages/*\" build && pnpm --filter \"@app/*\" build && pnpm build:cli",
     "build:cli": "tsc -p tsconfig.cli.json",
     "lint": "pnpm --recursive lint",
-    "typecheck": "pnpm --recursive typecheck && tsc -p tsconfig.cli.json --noEmit",
+    "typecheck": "pnpm --filter \"@packages/*\" build && pnpm --recursive typecheck && tsc -p tsconfig.cli.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
