@@ -1,6 +1,6 @@
 ---
 name: frontend-architecture
-description: Next.js App Router patterns, Tailwind CSS, TanStack Query, and AuthContext integration
+description: Next.js App Router patterns, Tailwind CSS, TanStack Query, AuthContext integration, and frontend testing expectations
 ---
 
 # Frontend Architecture Skill
@@ -16,3 +16,8 @@ description: Next.js App Router patterns, Tailwind CSS, TanStack Query, and Auth
 - Use `hasPermission(action)` from `useAuth()` to conditionally display admin navigation and action buttons.
 - Note: UI hiding is an aesthetic convenience, not the actual security boundary. All privileged backend API routes must enforce server-side `requirePermission(...)`.
 - `api-client.ts` uses `credentials: 'include'` on all `fetch` requests so HTTP-only session cookies are transmitted automatically.
+
+## 3. Mandatory Testing Expectations
+- Test client API interactions with unit tests for `@/lib/api-client`.
+- Prioritize behavioral testing (auth state changes, error handling, session expiration recovery) over brittle full-page DOM snapshots.
+- Ensure Next.js builds cleanly (`pnpm build`) with zero static generation errors across all routes.

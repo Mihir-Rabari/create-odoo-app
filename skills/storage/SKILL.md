@@ -1,6 +1,6 @@
 ---
 name: object-storage
-description: S3/MinIO StorageService abstraction, bucket management, and upload conventions
+description: S3/MinIO StorageService abstraction, bucket management, upload conventions, and storage testing expectations
 ---
 
 # Object Storage Skill
@@ -31,3 +31,8 @@ await storage.putObject('uploads/document.pdf', buffer, 'application/pdf');
 // Get object buffer
 const data = await storage.getObject('uploads/document.pdf');
 ```
+
+## 3. Mandatory Testing Expectations
+- Test storage client error handling when credentials or configuration are invalid.
+- Verify MIME type and size checks before invoking storage writes.
+- Do not make unit tests dependent on live remote cloud S3 buckets; use local MinIO or controlled doubles.

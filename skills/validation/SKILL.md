@@ -1,6 +1,6 @@
 ---
 name: input-validation
-description: Runtime schema validation rules, business constraint enforcement, and pagination limits
+description: Runtime schema validation rules, business constraint enforcement, pagination limits, and validation testing expectations
 ---
 
 # Input Validation Skill
@@ -21,3 +21,10 @@ All external input must be validated using Zod schemas at API boundaries before 
   - Always enforce bounded limits (default: 20, max: 100).
   - Page numbers must be positive integers (`z.coerce.number().int().positive()`).
 - **File Uploads**: Enforce strict file size limits and MIME type allowlists before storage processing.
+
+## 3. Mandatory Testing Expectations
+Every validation schema must include tests for:
+- Minimum and maximum boundary values.
+- Empty, null, and missing required fields.
+- Malformed inputs (invalid UUID strings, non-email formats).
+- Logical business violations (e.g. end date preceding start date).

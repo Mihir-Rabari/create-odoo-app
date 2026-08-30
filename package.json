@@ -79,6 +79,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:smoke": "tsx scripts/smoke-test.ts",
+    "test:security": "vitest run packages/auth packages/iam apps/api",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:smoke && pnpm build",
+    "verify:release": "tsx scripts/verify-release.ts",
     "setup": "tsx scripts/setup.ts",
     "db:generate": "pnpm --filter @packages/db db:generate",
     "db:migrate": "pnpm --filter @packages/db db:migrate",
@@ -92,6 +95,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.5",
+    "@vitest/coverage-v8": "^3.2.7",
     "dotenv": "^16.4.7",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",

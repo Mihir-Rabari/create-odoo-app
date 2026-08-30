@@ -1,6 +1,6 @@
 ---
 name: security-rules
-description: Inviolable security constraints, credential protection, and server-side authorization enforcement
+description: Inviolable security constraints, credential protection, server-side authorization, and adversarial security testing
 ---
 
 # Inviolable Security Rules Skill
@@ -13,3 +13,9 @@ description: Inviolable security constraints, credential protection, and server-
 5. **Never log sensitive data**: Passwords, session tokens, and secrets must never be written to stdout or application logs.
 6. **Protect against timing attacks**: Use constant-time comparison (`crypto.timingSafeEqual`) when verifying hashes or signatures.
 7. **Session invalidation**: Suspending or disabling an account must immediately revoke all associated active sessions in PostgreSQL and Redis.
+
+## 2. Mandatory Security Testing Doctrine
+Every security control must be backed by an adversarial test:
+- **Privilege Escalation**: Explicitly send requests with elevated roles/identities and verify rejection or sanitization.
+- **Data Redaction**: Verify that API error responses and logs never leak credentials, secrets, or internal database connection strings.
+- **Constant-Time Verification**: Ensure password verification functions handle malformed or empty hashes safely without timing discrepancies.

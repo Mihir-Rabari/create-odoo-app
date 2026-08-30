@@ -1,6 +1,6 @@
 ---
 name: observability-metrics
-description: Prometheus metrics, Grafana dashboards, health endpoints, and structured logging
+description: Prometheus metrics, Grafana dashboards, health endpoints, structured logging, and observability testing expectations
 ---
 
 # Observability & Monitoring Skill
@@ -19,3 +19,8 @@ description: Prometheus metrics, Grafana dashboards, health endpoints, and struc
 ## 3. Structured Logging
 - Uses Pino logger with automatic request ID correlation (`x-request-id`).
 - In development, logs formatted for human readability; in production, logs emitted as newline-delimited JSON.
+
+## 4. Mandatory Testing Expectations
+- Test that `/health`, `/health/live`, and `/health/ready` return valid HTTP statuses and structured JSON payloads.
+- Test that `/metrics` returns Prometheus text format containing HTTP request counters.
+- Test that sensitive credentials (passwords, tokens, secrets) are redacted and never leaked to logs.

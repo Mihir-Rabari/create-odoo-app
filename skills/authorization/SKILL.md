@@ -1,6 +1,6 @@
 ---
 name: authorization-iam
-description: Policy evaluation rules, permission catalog, role inheritance, and route guards
+description: Policy evaluation rules, permission catalog, role inheritance, route guards, and IAM testing expectations
 ---
 
 # IAM & Authorization Skill
@@ -33,3 +33,10 @@ fastify.put('/users/:id', {
   ],
 }, handler);
 ```
+
+## 4. Mandatory Testing Expectations
+Every IAM or authorization change requires:
+1. **Allow Cases**: Legitimate permissions allow operation.
+2. **Deny Precedence**: Explicit `DENY` statement strictly overrides any matching `ALLOW`.
+3. **Ownership Verification**: Resource-level ownership tests (`owner -> allowed`, `other user -> 403`, `unauthenticated -> 401`).
+4. **Privilege Escalation Defense**: Negative tests proving normal external users cannot grant themselves permissions or access admin routes.

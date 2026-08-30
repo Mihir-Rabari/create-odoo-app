@@ -1,6 +1,6 @@
 # AGENTS.md — Repository Operating Manual
 
-> **Scope**: Operating instructions, architectural rules, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
+> **Scope**: Operating instructions, architectural rules, testing doctrine, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
 
 ---
 
@@ -109,29 +109,22 @@ This repository is a **pnpm workspaces monorepo** and generator for production-r
 
 ---
 
-## 3. Skills Taxonomy (`skills/*`)
+## 3. Agent-Enforced Testing Doctrine & Quality Rules
 
-The repository includes structured reference skills to guide development agents:
+All automated coding agents and software engineers must strictly adhere to these testing laws:
 
-| Skill | Path | Description |
-| :--- | :--- | :--- |
-| **Architecture** | [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md) | Package boundaries and layering rules |
-| **Authentication** | [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md) | Password hashing, sessions, cookie security |
-| **Authorization** | [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md) | Policy evaluation engine and route guards |
-| **Database** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | Drizzle schemas, migrations, deterministic seeds |
-| **API** | [`skills/api/SKILL.md`](skills/api/SKILL.md) | Fastify route conventions and error handling |
-| **Frontend** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | Next.js App Router, TanStack Query, AuthContext |
-| **Security** | [`skills/security/SKILL.md`](skills/security/SKILL.md) | Zero-trust input rules and server-side authorization |
-| **Validation** | [`skills/validation/SKILL.md`](skills/validation/SKILL.md) | Universal runtime validation and business bounds |
-| **Testing** | [`skills/testing/SKILL.md`](skills/testing/SKILL.md) | Unit and Fastify injection testing patterns |
-| **Storage** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | S3/MinIO StorageService abstractions |
-| **Email** | [`skills/email/SKILL.md`](skills/email/SKILL.md) | Transactional email provider integration |
-| **Realtime** | [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md) | Redis Pub/Sub notification events |
-| **Observability** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | Prometheus metrics, Grafana, health probes |
+1. **Rule T1 (Verification Requirement)**: Every new behavior must have automated tests proving its correctness.
+2. **Rule T2 (Regression Defense)**: Every bug fix must include a permanent regression test capturing the discovered failure condition.
+3. **Rule T3 (Security Adversarial Testing)**: Security-sensitive changes require explicit adversarial negative tests (privilege escalation, unauthorized access, expired sessions, mismatched resource ownership).
+4. **Rule T4 (API Contracts)**: Every API route must be tested with Fastify `app.inject()` verifying validation (400), authentication (401), authorization (403), and success shapes.
+5. **Rule T5 (Database Integrity)**: Database schema modifications require migration verification and seed idempotency tests.
+6. **Rule T6 (Generator Smoke Coverage)**: Generator changes must pass full distributable smoke testing (`pnpm test:smoke`, `pnpm verify:release`).
+7. **Rule T7 (Quality Gates)**: Do not reduce coverage thresholds or delete tests to make a build pass.
+8. **Rule T8 (Pre-Completion Verification)**: Always run the full verification gate (`pnpm verify`) before declaring any task complete.
 
 ---
 
-## 4. Standard Development & Verification Commands
+## 4. Standard Development & Quality Verification Commands
 
 All commands should be executed from the repository root:
 
@@ -141,16 +134,16 @@ pnpm dev              # Launch web and api concurrently
 pnpm dev:api          # Launch Fastify API in watch mode
 pnpm dev:web          # Launch Next.js web application
 
-# Quality Verification
+# Quality Verification & Testing
+pnpm test             # Run Vitest test suite across all packages
+pnpm test:coverage    # Run Vitest test suite with v8 coverage analysis
+pnpm test:smoke       # Run generator smoke test in temporary directory
+pnpm test:security    # Run dedicated security & adversarial test suites
 pnpm typecheck        # Run TypeScript type check across all packages + CLI
 pnpm lint             # Run linting across all packages
-pnpm test             # Run Vitest test suite across all packages
-pnpm test:smoke       # Run generator smoke test in temporary directory
 pnpm build            # Build all packages, apps, and CLI executable
-
-# Generator CLI
-pnpm build:cli        # Compile src/cli.ts to dist/cli.js
-node dist/cli.js <app> # Run generator locally
+pnpm verify           # Complete local quality gate (lint + typecheck + test + smoke + build)
+pnpm verify:release   # Pre-release gate (build + pack + unpacked tarball generator test)
 
 # Database & Migrations
 pnpm setup            # Cross-platform idempotent setup and database seeding
@@ -164,3 +157,25 @@ pnpm infra:down       # Stop all infrastructure containers
 pnpm infra:reset      # Destroy containers and remove persistent volumes
 pnpm health           # Run end-to-end infrastructure health check
 ```
+
+---
+
+## 5. Skills Taxonomy (`skills/*`)
+
+The repository includes 13 structured reference skills with embedded domain testing expectations:
+
+| Skill | Path | Description |
+| :--- | :--- | :--- |
+| **Architecture** | [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md) | Package boundaries and layering rules |
+| **Authentication** | [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md) | Password hashing, sessions, cookie security |
+| **Authorization** | [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md) | Policy evaluation engine and route guards |
+| **Database** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | Drizzle schemas, migrations, deterministic seeds |
+| **API** | [`skills/api/SKILL.md`](skills/api/SKILL.md) | Fastify route conventions and error handling |
+| **Frontend** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | Next.js App Router, TanStack Query, AuthContext |
+| **Security** | [`skills/security/SKILL.md`](skills/security/SKILL.md) | Zero-trust input rules and server-side authorization |
+| **Validation** | [`skills/validation/SKILL.md`](skills/validation/SKILL.md) | Universal runtime validation and business bounds |
+| **Testing** | [`skills/testing/SKILL.md`](skills/testing/SKILL.md) | Central testing doctrine, pyramid, AAA pattern |
+| **Storage** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | S3/MinIO StorageService abstractions |
+| **Email** | [`skills/email/SKILL.md`](skills/email/SKILL.md) | Transactional email provider integration |
+| **Realtime** | [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md) | Redis Pub/Sub notification events |
+| **Observability** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | Prometheus metrics, Grafana, health probes |

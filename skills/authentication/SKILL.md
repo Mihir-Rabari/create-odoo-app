@@ -1,6 +1,6 @@
 ---
 name: authentication-system
-description: Authentication lifecycle, password hashing, session tokens, and identity management
+description: Authentication lifecycle, password hashing, session tokens, identity management, and auth testing expectations
 ---
 
 # Authentication System Skill
@@ -20,3 +20,11 @@ description: Authentication lifecycle, password hashing, session tokens, and ide
 - Statuses: `ACTIVE`, `SUSPENDED`, `DISABLED`.
 - `SUSPENDED` / `DISABLED` accounts are rejected at login and during session validation.
 - When an administrator suspends or disables an account, all active sessions are immediately revoked via `sessionManager.revokeAllUserSessions(userId)`.
+
+## 4. Mandatory Testing Expectations
+Every authentication change requires:
+1. **Happy Path**: Successful signup, login, session validation, logout.
+2. **Input Validation**: Rejection of weak passwords, malformed emails, empty inputs.
+3. **Security Invariants**: Verification that `passwordHash` is never exposed in user responses or session payloads.
+4. **Session Invalidation**: Testing that suspended or disabled accounts have active sessions rejected.
+5. **Cookie Security**: Testing that cookies have `httpOnly: true` and `secure: true` in production mode.

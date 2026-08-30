@@ -1,6 +1,6 @@
 ---
 name: repository-architecture
-description: Layering rules, workspace boundaries, and extension patterns for this monorepo
+description: Layering rules, workspace boundaries, extension patterns, and architectural testing expectations
 ---
 
 # Monorepo Architecture Skill
@@ -21,3 +21,7 @@ description: Layering rules, workspace boundaries, and extension patterns for th
 3. Centralize environment variable access: Always use `getEnv()` from `@packages/config`.
 4. Decouple storage: Use `StorageService` rather than raw MinIO endpoints.
 5. All external data entering via API must be runtime-validated with Zod before database persistence.
+
+## 3. Architectural Testing Expectations
+- Every package must include unit tests colocated with source code (`*.test.ts`).
+- Workspace builds (`pnpm build`) and typechecks (`pnpm typecheck`) must verify boundary isolation across all packages.

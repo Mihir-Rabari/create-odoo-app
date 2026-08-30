@@ -8,8 +8,17 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+      reporter: ['text', 'text-summary', 'json', 'html'],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/.next/**',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/scripts/**',
+        '**/infrastructure/**',
+        'apps/web/**',
+      ],
     },
   },
 });
