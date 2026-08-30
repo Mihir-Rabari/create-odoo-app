@@ -1,6 +1,6 @@
 ---
 name: authentication-system
-description: Authentication lifecycle, password hashing, session tokens, identity management, and auth testing expectations
+description: Authentication lifecycle, password hashing, session tokens, identity management, operational event logging, and auth testing expectations
 ---
 
 # Authentication System Skill
@@ -16,10 +16,14 @@ description: Authentication lifecycle, password hashing, session tokens, identit
 - **Redis Fast Lookup**: Cached with TTL matching session lifetime (`session:<tokenHash>`).
 - **Cookies**: Transmitted over secure HTTP-only cookies (`app_session`) with `SameSite=Lax`, `Path=/`, and `Secure` in production.
 
-## 3. Account Status & Invalidation
-- Statuses: `ACTIVE`, `SUSPENDED`, `DISABLED`.
-- `SUSPENDED` / `DISABLED` accounts are rejected at login and during session validation.
-- When an administrator suspends or disables an account, all active sessions are immediately revoked via `sessionManager.revokeAllUserSessions(userId)`.
+## 3. Operational Event Logging
+Log structured auth events without credentials:
+- `auth.signup.success` (with `userId`, `identityType`)
+- `auth.signup.failure` (with reason code, never passwords)
+- `auth.login.success` (with `userId`, `identityType`)
+- `auth.login.failure` (with reason code, never passwords)
+- `auth.logout` (with `userId`)
+- `auth.session.revoked` (with `userId`, `reason`)
 
 ## 4. Mandatory Testing Expectations
 Every authentication change requires:

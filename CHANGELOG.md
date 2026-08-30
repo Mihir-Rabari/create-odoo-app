@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - IAM Policy Evaluation Engine enforcing **Explicit Deny Precedence**, **ROOT superuser authority**, wildcard pattern matching (`users:*`), and resource ownership checks (`:self`).
   - Declarative Fastify route guards (`requireAuthentication`, `requirePermission`, `requireAnyPermission`).
   - Next.js Admin IAM Control Center (`/admin`, `/admin/iam/users`, `/admin/iam/roles`, `/admin/iam/groups`, `/admin/iam/policies`, `/admin/iam/permissions`) with live Effective Permissions Calculation view.
+- **OpenAPI & Structured Logging Hardening (Phase 5.1)**:
+  - Universal structured logger in `@packages/shared` with automatic defensive sensitive data redaction (`password`, `token`, `secret`, `apiKey`, `cookie`, `authorization`, `databaseUrl`, `SESSION_SECRET`).
+  - Fastify request correlation ID propagation (`x-request-id` header sanitization and onSend response tracing).
+  - Correlated error payloads (`HttpErrorResponse`) containing matching `requestId` for client diagnostics without stack trace leakage.
+  - Accurate OpenAPI 3.0 `CookieAuth` security scheme (`app_session` cookie) and standard reusable error schemas.
+  - Operational event logging across Auth (`auth.signup.success`, `auth.login.failure`, `auth.logout`, `auth.session.revoked`) and IAM (`iam.user.status_updated`, `iam.role.assigned`).
 - **Developer Configuration Surface (`packages/config`)**:
   - `app-config.ts`: Application constants, metadata, pagination limits.
   - `auth-config.ts`: Authentication settings (`registrationEnabled`, `defaultIdentity`, `sessionTtlSeconds`, `cookieName`, `minPasswordLength`).

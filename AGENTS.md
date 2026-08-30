@@ -79,6 +79,7 @@ This repository is a **pnpm workspaces monorepo** and generator for production-r
 
 7. **`packages/shared`**:
    - Decoupled client abstractions for Redis (`ioredis`) and Object Storage (`@aws-sdk/client-s3`).
+   - Universal structured logger (`createLogger`, `logger`, `REDACTED_PATHS`) with defensive sensitive data redaction.
    - Shared TypeScript types, API response formats, and health probe models.
 
 8. **`packages/db`**:
@@ -86,7 +87,7 @@ This repository is a **pnpm workspaces monorepo** and generator for production-r
    - Provides typed query access and database health checks.
 
 9. **`packages/openapi`**:
-   - OpenAPI 3.0 specification metadata, tag taxonomy, and schema utilities.
+   - OpenAPI 3.0 specification metadata, tag taxonomy, `CookieAuth` security scheme, and schema utilities.
 
 ---
 
@@ -144,6 +145,7 @@ pnpm lint             # Run linting across all packages
 pnpm build            # Build all packages, apps, and CLI executable
 pnpm verify           # Complete local quality gate (lint + typecheck + test + smoke + build)
 pnpm verify:release   # Pre-release gate (build + pack + unpacked tarball generator test)
+pnpm release:check    # Canonical pre-release verification checklist
 
 # Database & Migrations
 pnpm setup            # Cross-platform idempotent setup and database seeding
@@ -160,7 +162,18 @@ pnpm health           # Run end-to-end infrastructure health check
 
 ---
 
-## 5. Skills Taxonomy (`skills/*`)
+## 5. Structured Logging & Observability Rules
+
+1. **Use the Shared Logger**: Always import `logger` or `createLogger` from `@packages/shared`.
+2. **No `console.log`**: Never use `console.log`, `console.error`, or `console.warn` in backend application code.
+3. **Request Correlation**: Every HTTP request must have an `x-request-id` header generated or sanitized by Fastify.
+4. **Error Correlation**: Every unexpected error must produce a structured server log and return a sanitized `HttpErrorResponse` containing `requestId`. Never expose stack traces to clients.
+5. **Defensive Redaction**: Never log passwords, tokens, session cookies, database connection strings, or secrets.
+6. **OpenAPI Synchronization**: Keep OpenAPI route schemas and `CookieAuth` security schemes synchronized with actual route behavior.
+
+---
+
+## 6. Skills Taxonomy (`skills/*`)
 
 The repository includes 13 structured reference skills with embedded domain testing expectations:
 

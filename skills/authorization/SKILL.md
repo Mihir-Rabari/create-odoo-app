@@ -1,6 +1,6 @@
 ---
 name: authorization-iam
-description: Policy evaluation rules, permission catalog, role inheritance, route guards, and IAM testing expectations
+description: Policy evaluation rules, permission catalog, role inheritance, route guards, operational IAM logging, and testing expectations
 ---
 
 # IAM & Authorization Skill
@@ -12,9 +12,9 @@ description: Policy evaluation rules, permission catalog, role inheritance, rout
    - For `:self` actions (e.g. `profile:update:self`), verify `context.resourceOwnerId === identity.id`.
 4. **Implicit Deny**: If no matching statement is found, access is denied by default.
 
-## 2. Permission Catalog Convention
-- Format: `namespace:action` (e.g. `users:read`, `roles:create`, `projects:delete`).
-- Dynamic Registration: New modules register permissions via `registerPermissions({ namespace, permissions })`.
+## 2. Operational Event Logging vs Audit Trail
+- **Operational Logs**: Diagnostic logs for developer visibility (e.g. `iam.permission.evaluated`, `iam.user.status_updated`).
+- **Audit Logs**: Durable database records for security compliance (e.g. `iam_audit_logs` table tracking administrative changes).
 
 ## 3. Fastify Route Guards
 ```typescript

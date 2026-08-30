@@ -23,6 +23,8 @@ import errorHandlerPlugin from './plugins/error-handler.js';
 import { healthRoutes } from './routes/health.js';
 import { v1Routes } from './routes/v1/index.js';
 
+const SAFE_REQ_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
 export function buildApp(options: FastifyServerOptions = {}): FastifyInstance {
   const env = getEnv();
   const logger = createLogger(env.NODE_ENV, env.LOG_LEVEL);
@@ -31,13 +33,22 @@ export function buildApp(options: FastifyServerOptions = {}): FastifyInstance {
     loggerInstance: logger,
     genReqId: (req) => {
       const headerReqId = req.headers['x-request-id'];
-      if (typeof headerReqId === 'string' && headerReqId.length > 0) {
+      if (
+        typeof headerReqId === 'string' &&
+        headerReqId.length > 0 &&
+        SAFE_REQ_ID_PATTERN.test(headerReqId)
+      ) {
         return headerReqId;
       }
       return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     },
     ...options,
   }).withTypeProvider<ZodTypeProvider>();
+
+  // Ensure x-request-id is always included in response headers for client tracing
+  app.addHook('onSend', async (request, reply) => {
+    reply.header('x-request-id', request.id);
+  });
 
   // Configure Zod validation & serialization compilers
   app.setValidatorCompiler(validatorCompiler);
