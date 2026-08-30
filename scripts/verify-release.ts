@@ -60,12 +60,16 @@ async function verifyRelease(): Promise<void> {
     }
     console.log(`[Release Gate] ✔ Package version verified: ${rootPkg.name}@${rootPkg.version}`);
 
-    // 2. Build Monorepo & CLI
-    console.log('\n[Release Gate] 🔨 Step 2: Compiling all packages and generator CLI...');
+    // 2. Validate Skills Standard
+    console.log('\n[Release Gate] 📋 Step 2: Validating Agent Skills standard...');
+    execSync('pnpm skills:check', { cwd: rootDir, stdio: 'inherit' });
+
+    // 3. Build Monorepo & CLI
+    console.log('\n[Release Gate] 🔨 Step 3: Compiling all packages and generator CLI...');
     execSync('pnpm build', { cwd: rootDir, stdio: 'inherit' });
 
-    // 3. Package Tarball via npm pack
-    console.log('\n[Release Gate] 📦 Step 3: Packaging distributable tarball with npm pack...');
+    // 4. Package Tarball via npm pack
+    console.log('\n[Release Gate] 📦 Step 4: Packaging distributable tarball with npm pack...');
     const packOutput = execSync('npm pack', { cwd: rootDir, encoding: 'utf-8' }).trim();
     const tarballName = packOutput.split('\n').pop()?.trim() || `create-odoo-app-${rootPkg.version}.tgz`;
     const tarballPath = path.join(rootDir, tarballName);
@@ -76,11 +80,11 @@ async function verifyRelease(): Promise<void> {
 
     console.log(`[Release Gate] ✔ Packaged tarball: ${tarballName}`);
 
-    // 4. Prepare clean verification directory
+    // 5. Prepare clean verification directory
     await fs.promises.mkdir(tempDir, { recursive: true });
 
-    // 5. Extract tarball into temp directory
-    console.log(`[Release Gate] 📂 Step 4: Unpacking tarball in ${tempDir}...`);
+    // 6. Extract tarball into temp directory
+    console.log(`[Release Gate] 📂 Step 5: Unpacking tarball in ${tempDir}...`);
     execSync(`tar -xzf "${tarballPath}" -C "${tempDir}"`, { stdio: 'ignore' });
 
     const packageRoot = path.join(tempDir, 'package');
@@ -88,8 +92,8 @@ async function verifyRelease(): Promise<void> {
       throw new Error(`Expected unpacked 'package' directory in ${tempDir}`);
     }
 
-    // 6. Audit unpacked package contents for private files
-    console.log('[Release Gate] 🔍 Step 5: Auditing unpacked package contents for leaked files...');
+    // 7. Audit unpacked package contents for private files
+    console.log('[Release Gate] 🔍 Step 6: Auditing unpacked package contents for leaked files...');
     const forbiddenLeaked = [
       path.join(packageRoot, '.git'),
       path.join(packageRoot, 'brain'),
@@ -104,16 +108,16 @@ async function verifyRelease(): Promise<void> {
       }
     }
 
-    // 7. Audit for hardcoded local machine paths in packaged text files
-    console.log('[Release Gate] 🔍 Step 6: Scanning package files for hardcoded developer paths...');
+    // 8. Audit for hardcoded local machine paths in packaged text files
+    console.log('[Release Gate] 🔍 Step 7: Scanning package files for hardcoded developer paths...');
     const pathViolations = await scanDirectoryForMachinePaths(packageRoot);
     if (pathViolations.length > 0) {
       throw new Error(`LEAK DETECTED: Hardcoded developer paths found in files:\n${pathViolations.join('\n')}`);
     }
     console.log('[Release Gate] ✔ Zero hardcoded machine paths found in packaged files.');
 
-    // 8. Execute Generator from Unpacked Artifact
-    console.log('[Release Gate] 🚀 Step 7: Executing create-odoo-app from unpacked distribution...');
+    // 9. Execute Generator from Unpacked Artifact
+    console.log('[Release Gate] 🚀 Step 8: Executing create-odoo-app from unpacked distribution...');
     const targetAppDir = path.join(tempDir, 'enterprise-portal');
     const cliPath = path.join(packageRoot, 'dist', 'cli.js');
 
@@ -122,25 +126,34 @@ async function verifyRelease(): Promise<void> {
       stdio: 'inherit',
     });
 
-    // 9. Validate Generated Application
-    console.log('[Release Gate] 🔍 Step 8: Validating generated enterprise-portal project structure...');
+    // 10. Validate Generated Application
+    console.log('[Release Gate] 🔍 Step 9: Validating generated enterprise-portal project structure...');
     const requiredFiles = [
       'package.json',
       'pnpm-workspace.yaml',
       '.env.example',
       '.env',
       'apps/web/package.json',
+      'apps/web/AGENTS.md',
       'apps/api/package.json',
+      'apps/api/AGENTS.md',
       'packages/auth/package.json',
+      'packages/auth/AGENTS.md',
       'packages/iam/package.json',
+      'packages/iam/AGENTS.md',
       'packages/config/package.json',
       'packages/config/src/app-config.ts',
       'packages/config/src/auth-config.ts',
       'packages/config/src/iam-config.ts',
       'packages/config/src/feature-config.ts',
       'packages/db/package.json',
+      'packages/db/AGENTS.md',
+      'skills/index.yaml',
+      'skills/architecture/SKILL.md',
       'skills/security/SKILL.md',
+      'skills/testing/SKILL.md',
       'README.md',
+      'CHANGELOG.md',
       'AGENTS.md',
     ];
 
@@ -165,7 +178,7 @@ async function verifyRelease(): Promise<void> {
       throw new Error('Expected README.md to contain "# Enterprise Portal"');
     }
 
-    // 10. Clean up root tarball
+    // 11. Clean up root tarball
     if (fs.existsSync(tarballPath)) {
       await fs.promises.unlink(tarballPath);
     }

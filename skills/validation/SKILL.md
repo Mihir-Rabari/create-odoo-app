@@ -1,18 +1,18 @@
 ---
-name: input-validation
-description: Runtime schema validation rules, business constraint enforcement, pagination limits, and validation testing expectations
+name: validation
+description: Runtime Zod validation schemas, business bounds, date ordering, and pagination limits.
 ---
 
-# Input Validation Skill
+# Validation Skill
 
-## 1. Universal Runtime Validation
-All external input must be validated using Zod schemas at API boundaries before reaching services or database layers.
+## 1. When to Use
+Use this skill when defining Zod runtime schemas, validating API inputs, enforcing numeric bounds, enforcing date constraints, or parsing query parameters.
 
 ## 2. Business Constraint Rules
 - **Identifiers**: Validate UUID format using `z.string().uuid()` (`UuidSchema`).
 - **Emails**: Validate and normalize lowercase: `z.string().trim().email().toLowerCase()`.
 - **Strings**: Reject empty or whitespace-only strings with `z.string().trim().min(1)`.
-- **Passwords**: Enforce minimum length of 8 characters.
+- **Passwords**: Enforce minimum length of 8 characters (`minPasswordLength`).
 - **Dates**:
   - Birth dates cannot be in the future.
   - End dates must be greater than or equal to start dates.

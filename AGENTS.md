@@ -1,6 +1,6 @@
 # AGENTS.md — Repository Operating Manual
 
-> **Scope**: Operating instructions, architectural rules, testing doctrine, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
+> **Scope**: Operating instructions, architectural rules, testing doctrine, skill discovery, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
 
 ---
 
@@ -41,53 +41,17 @@ This repository is a **pnpm workspaces monorepo** and generator for production-r
                    └───────────────────────────────┘
 ```
 
-### Package Responsibilities
+### Package Responsibilities & Subtree AGENTS.md
 
-1. **`apps/web` (Frontend)**:
-   - Next.js App Router application.
-   - Responsible for rendering user interfaces, client components, and server components.
-   - **Must never** import `@packages/db` or connect directly to PostgreSQL, Redis, or MinIO/S3.
-   - Interacts with backend via `@/lib/api-client` (with `credentials: 'include'`), AuthContext, and TanStack Query hooks.
-
-2. **`apps/api` (Backend Gateway)**:
-   - Fastify application with Zod type-provider and structured error handling.
-   - Exposes REST endpoints, OpenAPI docs (`/api/docs`), and Prometheus metrics (`/metrics`).
-   - Owns authentication, authorization route guards (`requireAuthentication`, `requirePermission`), rate limiting, and business services.
-
-3. **`packages/auth` (Authentication & Sessions)**:
-   - Password hashing with `scrypt` and timing-safe comparison (`crypto.timingSafeEqual`).
-   - Server-side session management (`SessionManager`) with SHA-256 token hashing in PostgreSQL and Redis caching.
-   - Session cookie helpers (`getSessionCookieOptions`).
-   - Authentication error classes (`InvalidCredentialsError`, `SessionExpiredError`, `AccountSuspendedError`, `AccountDisabledError`).
-
-4. **`packages/iam` (Identity & Access Management)**:
-   - Permission catalog registry (`PermissionCatalog`, `registerPermissions`).
-   - Centralized policy evaluation engine (`PolicyEngine.evaluate`) enforcing **Explicit Deny Precedence**, **ROOT superuser authority**, wildcard matching, and resource ownership (`:self`).
-   - Database IAM service (`IamService`) for Users, Roles, Groups, Policies, PolicyStatements, and Effective Permissions calculation.
-   - Fastify route pre-handlers (`requireAuthentication`, `requirePermission`, `requireAnyPermission`).
-
-5. **`packages/config` (Developer Configuration Surface)**:
-   - `app-config.ts`: Application constants, metadata, branding, and pagination defaults.
-   - `auth-config.ts`: Authentication settings (registration toggle, session TTL, cookie name).
-   - `iam-config.ts`: Declarative domain roles, groups, default policies, and baseline role-policy assignments.
-   - `feature-config.ts`: Feature toggles (email, realtime, storage, observability).
-   - `env.ts`: Runtime environment parser validated with Zod (`getEnv()`).
-
-6. **`packages/validation`**:
-   - Reusable runtime validation schemas (auth, IAM, pagination, UUID, IDs, query strings).
-   - Standardized HTTP error response schemas (`HttpErrorResponseSchema`).
-
-7. **`packages/shared`**:
-   - Decoupled client abstractions for Redis (`ioredis`) and Object Storage (`@aws-sdk/client-s3`).
-   - Universal structured logger (`createLogger`, `logger`, `REDACTED_PATHS`) with defensive sensitive data redaction.
-   - Shared TypeScript types, API response formats, and health probe models.
-
-8. **`packages/db`**:
-   - Drizzle ORM schema definitions (`system.ts`, `auth.ts`, `iam.ts`), PostgreSQL connection pooling, migrations, and seeds.
-   - Provides typed query access and database health checks.
-
-9. **`packages/openapi`**:
-   - OpenAPI 3.0 specification metadata, tag taxonomy, `CookieAuth` security scheme, and schema utilities.
+- **`apps/web`** ([`apps/web/AGENTS.md`](apps/web/AGENTS.md)): Next.js App Router, `@/lib/api-client`, TanStack Query hooks, AuthContext, permission-aware UI.
+- **`apps/api`** ([`apps/api/AGENTS.md`](apps/api/AGENTS.md)): Fastify HTTP gateway, Zod type-provider, OpenAPI docs (`/api/docs`), Prometheus metrics (`/metrics`), structured logging, and authorization route guards.
+- **`packages/auth`** ([`packages/auth/AGENTS.md`](packages/auth/AGENTS.md)): Node `scrypt` password hashing, timing-safe equality, server-side session management (`SessionManager`) with SHA-256 token hashing, and session cookie helpers.
+- **`packages/iam`** ([`packages/iam/AGENTS.md`](packages/iam/AGENTS.md)): Permission catalog, centralized policy evaluation engine (`PolicyEngine`), `IamService`, and Fastify route guards.
+- **`packages/db`** ([`packages/db/AGENTS.md`](packages/db/AGENTS.md)): Drizzle ORM schema modularity, PostgreSQL connection pooling, migrations, and deterministic seed runner.
+- **`packages/config`**: Application metadata, authentication settings, declarative domain IAM configurations, and Zod environment parsing (`getEnv()`).
+- **`packages/validation`**: Reusable runtime validation schemas and standardized HTTP error response schemas (`HttpErrorResponseSchema`).
+- **`packages/shared`**: Redis (`ioredis`), S3/MinIO (`@aws-sdk/client-s3`) client abstractions, and universal structured logger.
+- **`packages/openapi`**: OpenAPI 3.0 specification builder, `CookieAuth` security scheme, and schema utilities.
 
 ---
 
@@ -136,6 +100,7 @@ pnpm dev:api          # Launch Fastify API in watch mode
 pnpm dev:web          # Launch Next.js web application
 
 # Quality Verification & Testing
+pnpm skills:check     # Validate Agent Skills registry, frontmatter, and links
 pnpm test             # Run Vitest test suite across all packages
 pnpm test:coverage    # Run Vitest test suite with v8 coverage analysis
 pnpm test:smoke       # Run generator smoke test in temporary directory
@@ -143,7 +108,7 @@ pnpm test:security    # Run dedicated security & adversarial test suites
 pnpm typecheck        # Run TypeScript type check across all packages + CLI
 pnpm lint             # Run linting across all packages
 pnpm build            # Build all packages, apps, and CLI executable
-pnpm verify           # Complete local quality gate (lint + typecheck + test + smoke + build)
+pnpm verify           # Complete local quality gate (skills + lint + typecheck + test + smoke + build)
 pnpm verify:release   # Pre-release gate (build + pack + unpacked tarball generator test)
 pnpm release:check    # Canonical pre-release verification checklist
 
@@ -173,22 +138,32 @@ pnpm health           # Run end-to-end infrastructure health check
 
 ---
 
-## 6. Skills Taxonomy (`skills/*`)
+## 6. Agent Skills Standard & Discovery Workflow
 
-The repository includes 13 structured reference skills with embedded domain testing expectations:
+This repository provides 13 standardized Agent Skills under `skills/`. Use `skills/index.yaml` as the machine-readable discovery registry.
+
+### Targeted Context Loading Workflow
+Before modifying a subsystem:
+1. **Identify**: Review the Skills Index below to find the governing skill.
+2. **Read**: Open and read its `SKILL.md`.
+3. **Follow Constraints**: Apply the rules, conventions, and invariants documented in the skill.
+4. **Implement & Test**: Add automated tests proving correctness.
+5. **Verify**: Run `pnpm verify` to satisfy all repository quality gates.
+
+### Canonical Skills Index
 
 | Skill | Path | Description |
 | :--- | :--- | :--- |
-| **Architecture** | [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md) | Package boundaries and layering rules |
-| **Authentication** | [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md) | Password hashing, sessions, cookie security |
-| **Authorization** | [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md) | Policy evaluation engine and route guards |
-| **Database** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | Drizzle schemas, migrations, deterministic seeds |
-| **API** | [`skills/api/SKILL.md`](skills/api/SKILL.md) | Fastify route conventions and error handling |
-| **Frontend** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | Next.js App Router, TanStack Query, AuthContext |
-| **Security** | [`skills/security/SKILL.md`](skills/security/SKILL.md) | Zero-trust input rules and server-side authorization |
-| **Validation** | [`skills/validation/SKILL.md`](skills/validation/SKILL.md) | Universal runtime validation and business bounds |
-| **Testing** | [`skills/testing/SKILL.md`](skills/testing/SKILL.md) | Central testing doctrine, pyramid, AAA pattern |
-| **Storage** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | S3/MinIO StorageService abstractions |
-| **Email** | [`skills/email/SKILL.md`](skills/email/SKILL.md) | Transactional email provider integration |
-| **Realtime** | [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md) | Redis Pub/Sub notification events |
-| **Observability** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | Prometheus metrics, Grafana, health probes |
+| **Architecture** | [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md) | Monorepo package boundaries, layering rules, and extension patterns. |
+| **Authentication** | [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md) | Password hashing (scrypt), server-side session tokens, HTTP-only cookies, and auth events. |
+| **Authorization** | [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md) | Identity and Access Management, policy evaluation engine, declarative route guards, and permissions. |
+| **Database** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | PostgreSQL schema conventions, Drizzle ORM, migrations, deterministic seeding, and database integrity. |
+| **API** | [`skills/api/SKILL.md`](skills/api/SKILL.md) | Fastify route development, Zod type providers, OpenAPI documentation, structured logging, and error responses. |
+| **Frontend** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | Next.js App Router, Tailwind CSS, TanStack Query, AuthContext, and permission-aware UI. |
+| **Security** | [`skills/security/SKILL.md`](skills/security/SKILL.md) | Zero-trust input rules, server-side authorization, credential protection, and adversarial security testing. |
+| **Validation** | [`skills/validation/SKILL.md`](skills/validation/SKILL.md) | Runtime Zod validation schemas, business bounds, date ordering, and pagination limits. |
+| **Testing** | [`skills/testing/SKILL.md`](skills/testing/SKILL.md) | Testing doctrine, pyramid (unit, integration, API, security, smoke), AAA pattern, and coverage enforcement. |
+| **Storage** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | S3/MinIO StorageService abstraction, bucket management, and object storage conventions. |
+| **Email** | [`skills/email/SKILL.md`](skills/email/SKILL.md) | Transactional email provider integration, templates, and delivery rules. |
+| **Realtime** | [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md) | Redis Pub/Sub messaging and realtime notification events. |
+| **Observability** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | Structured logging, request correlation, Prometheus metrics, health probes, and sensitive data redaction. |

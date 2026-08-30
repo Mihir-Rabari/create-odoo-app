@@ -1,11 +1,14 @@
 ---
-name: security-rules
-description: Inviolable security constraints, credential protection, sensitive data redaction, server-side authorization, and adversarial testing
+name: security
+description: Zero-trust input rules, server-side authorization, credential protection, and adversarial security testing.
 ---
 
-# Inviolable Security Rules Skill
+# Security Skill
 
-## 1. Zero Trust of Client Input
+## 1. When to Use
+Use this skill when designing endpoints, implementing authentication/authorization, handling credentials, processing external input, or auditing against adversarial attacks.
+
+## 2. Inviolable Security Rules
 1. **Never trust client-supplied roles**: When a user registers or submits data, client payload fields such as `role`, `identityType`, or `permissions` must be discarded.
 2. **Never trust client-supplied ownership**: Always check `context.resourceOwnerId === identity.id` on the server before allowing access to `:self` operations.
 3. **Never trust hidden frontend controls**: Hiding a button or route in Next.js does not secure an endpoint. All privileged operations require server-side Fastify route guards (`requirePermission`).
@@ -15,7 +18,7 @@ description: Inviolable security constraints, credential protection, sensitive d
 7. **Session invalidation**: Suspending or disabling an account must immediately revoke all associated active sessions in PostgreSQL and Redis.
 8. **Never leak stack traces**: Error responses to clients must remain sanitized and return a correlated `requestId` without internal diagnostics.
 
-## 2. Mandatory Security Testing Doctrine
+## 3. Mandatory Security Testing Doctrine
 Every security control must be backed by an adversarial test:
 - **Privilege Escalation**: Explicitly send requests with elevated roles/identities and verify rejection or sanitization.
 - **Data Redaction**: Verify that API error responses and logs never leak credentials, secrets, or internal database connection strings.

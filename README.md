@@ -86,14 +86,14 @@ The generated project exposes a configuration layer in `packages/config/src/`:
 
 ---
 
-## 5. Skills Architecture (`skills/*`)
+## 5. Agent Skills Architecture & Discovery (`skills/*`)
 
-The project includes 13 reference guides designed for coding agents and developers:
+The project provides 13 reusable Agent Skills aligned with the **Agent Skills open standard**, cataloged in the machine-readable registry [`skills/index.yaml`](skills/index.yaml):
 
-* [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md): Monorepo structure, package boundaries, layering.
-* [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md): Session lifecycle, scrypt hashing, cookies.
+* [`skills/architecture/SKILL.md`](skills/architecture/SKILL.md): Monorepo structure, package boundaries, layering rules.
+* [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md): Session lifecycle, scrypt hashing, cookies, auth events.
 * [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md): Policy evaluation, explicit deny precedence, `:self` ownership.
-* [`skills/database/SKILL.md`](skills/database/SKILL.md): Drizzle schemas, migrations, relations.
+* [`skills/database/SKILL.md`](skills/database/SKILL.md): Drizzle schemas, migrations, relations, deterministic seeds.
 * [`skills/api/SKILL.md`](skills/api/SKILL.md): Fastify route conventions, Zod validation, error responses.
 * [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md): Next.js App Router, TanStack Query, AuthContext.
 * [`skills/security/SKILL.md`](skills/security/SKILL.md): Inviolable security rules (never trust client input, server guards).
@@ -103,6 +103,11 @@ The project includes 13 reference guides designed for coding agents and develope
 * [`skills/email/SKILL.md`](skills/email/SKILL.md): Transactional email provider integration.
 * [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md): Redis Pub/Sub notification events.
 * [`skills/observability/SKILL.md`](skills/observability/SKILL.md): Prometheus metrics, Grafana dashboards, health probes.
+
+Validate skill registry and YAML frontmatter integrity at any time with:
+```bash
+pnpm skills:check
+```
 
 ---
 

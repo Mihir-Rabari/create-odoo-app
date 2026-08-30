@@ -1,11 +1,14 @@
 ---
-name: api-development
-description: Fastify route development, Zod type providers, OpenAPI documentation, structured logging, error handling, and API testing expectations
+name: api
+description: Fastify route development, Zod type providers, OpenAPI documentation, structured logging, and error responses.
 ---
 
 # API Development Skill
 
-## 1. Route Registration Convention
+## 1. When to Use
+Use this skill when implementing Fastify REST routes, adding Zod input validation schemas, documenting endpoints in OpenAPI, or configuring API error handling.
+
+## 2. Route Registration Convention
 All routes must use `FastifyPluginAsyncZod` from `fastify-type-provider-zod`:
 ```typescript
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -38,17 +41,17 @@ export const featureRoutes: FastifyPluginAsyncZod = async (fastify) => {
 };
 ```
 
-## 2. Standard Error Responses & Request Correlation
-- Every API response attaches `x-request-id` header.
+## 3. Standard Error Responses & Request Correlation
+- Every API response attaches an `x-request-id` header.
 - All error responses conform to `HttpErrorResponseSchema` including the matching `requestId`.
 - Never expose internal stack traces or connection strings in client error responses.
 
-## 3. OpenAPI Documentation
+## 4. OpenAPI Documentation
 - Interactive documentation: `/api/docs` (Swagger UI).
 - Raw OpenAPI 3.0 specification: `/api/openapi.json`.
 - Authentication in OpenAPI is documented as `CookieAuth` (`app_session` cookie).
 
-## 4. Mandatory Testing Expectations
+## 5. Mandatory Testing Expectations
 Every new API route requires:
 1. **Schema Validation Test**: Verifying invalid parameters return 400 with structured validation details.
 2. **Authentication Guard Test**: Verifying unauthenticated requests return 401.

@@ -27,13 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Correlated error payloads (`HttpErrorResponse`) containing matching `requestId` for client diagnostics without stack trace leakage.
   - Accurate OpenAPI 3.0 `CookieAuth` security scheme (`app_session` cookie) and standard reusable error schemas.
   - Operational event logging across Auth (`auth.signup.success`, `auth.login.failure`, `auth.logout`, `auth.session.revoked`) and IAM (`iam.user.status_updated`, `iam.role.assigned`).
+- **Real Agent Skills Standard & Skill Discovery Architecture (Phase 6)**:
+  - Agent Skills open-standard compliant skill bundles with matching directory names and YAML frontmatter (`name`, `description`).
+  - Machine-readable skill registry (`skills/index.yaml`) cataloging all 13 canonical skills.
+  - Automated skill validation tooling (`scripts/check-skills.ts` / `pnpm skills:check`).
+  - Localized subtree `AGENTS.md` context files (`apps/api/AGENTS.md`, `apps/web/AGENTS.md`, `packages/auth/AGENTS.md`, `packages/iam/AGENTS.md`, `packages/db/AGENTS.md`).
+  - Propagation of skills registry and localized context manuals into generated projects.
 - **Developer Configuration Surface (`packages/config`)**:
   - `app-config.ts`: Application constants, metadata, pagination limits.
   - `auth-config.ts`: Authentication settings (`registrationEnabled`, `defaultIdentity`, `sessionTtlSeconds`, `cookieName`, `minPasswordLength`).
   - `iam-config.ts`: Declarative domain roles, groups, default policies, and baseline role-policy assignments.
   - `feature-config.ts`: Optional feature toggles (`enableSwagger`, `enableMetrics`, `enableStorage`, `enableRedis`, `enableEmail`).
-- **Agent-Native Skills Architecture (`skills/*`)**:
-  - 13 domain reference guides (`architecture`, `authentication`, `authorization`, `database`, `api`, `frontend`, `security`, `validation`, `testing`, `storage`, `email`, `realtime`, `observability`).
 - **Comprehensive Quality Gates & Testing Architecture**:
   - Multi-tier testing pyramid: unit tests, Fastify `app.inject()` integration tests, adversarial security tests, generator smoke tests, and packed tarball release verification (`pnpm verify:release`).
   - Coverage analysis with `@vitest/coverage-v8`.

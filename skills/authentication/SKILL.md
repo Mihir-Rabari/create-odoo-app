@@ -1,20 +1,20 @@
 ---
-name: authentication-system
-description: Authentication lifecycle, password hashing, session tokens, identity management, operational event logging, and auth testing expectations
+name: authentication
+description: Password hashing (scrypt), server-side session tokens, HTTP-only cookies, and auth events.
 ---
 
-# Authentication System Skill
+# Authentication Skill
 
-## 1. Password Cryptography
-- **Hashing**: Use `hashPassword(password)` from `@packages/auth` (scrypt with 16-byte random salt).
-- **Verification**: Use `verifyPassword(password, hash)` with timing-safe comparison (`crypto.timingSafeEqual`).
-- **Rules**: Never store or log plaintext passwords. Never return `passwordHash` in API responses or user models.
+## 1. When to Use
+Use this skill when implementing or modifying password verification, session lifecycles, user authentication cookies, external user registration, or authentication operational event logging.
 
-## 2. Server-Side Session Management
-- **Token Format**: 32-byte cryptographic random token (`crypto.randomBytes(32).toString('hex')`).
-- **Database Storage**: Tokens are hashed with SHA-256 before insertion into the `sessions` table (`tokenHash`).
-- **Redis Fast Lookup**: Cached with TTL matching session lifetime (`session:<tokenHash>`).
+## 2. Core Invariants
+- **Password Hashing**: Always use `hashPassword(password)` from `@packages/auth` (scrypt with 16-byte random salt).
+- **Password Verification**: Always use `verifyPassword(password, hash)` with timing-safe comparison (`crypto.timingSafeEqual`).
+- **Zero Leakage**: Never store or log plaintext passwords. Never return `passwordHash` in API responses or serialization models.
+- **Server Sessions**: 32-byte cryptographic random token stored in PostgreSQL as a SHA-256 `tokenHash` and cached in Redis.
 - **Cookies**: Transmitted over secure HTTP-only cookies (`app_session`) with `SameSite=Lax`, `Path=/`, and `Secure` in production.
+- **Account Invalidation**: `SUSPENDED` / `DISABLED` accounts are rejected at login and during session validation. All active sessions are revoked upon status change.
 
 ## 3. Operational Event Logging
 Log structured auth events without credentials:

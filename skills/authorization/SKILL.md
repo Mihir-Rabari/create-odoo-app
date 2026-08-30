@@ -1,22 +1,25 @@
 ---
-name: authorization-iam
-description: Policy evaluation rules, permission catalog, role inheritance, route guards, operational IAM logging, and testing expectations
+name: authorization
+description: Identity and Access Management, policy evaluation engine, declarative route guards, and permissions.
 ---
 
-# IAM & Authorization Skill
+# Authorization & IAM Skill
 
-## 1. Deterministic Evaluation Rules
+## 1. When to Use
+Use this skill when defining permissions, roles, groups, IAM policies, policy evaluation statements, route guards, or resource ownership checks.
+
+## 2. Policy Evaluation Invariants
 1. **Superuser ROOT Authority**: If `identity.identityType === 'ROOT'`, access is unconditionally granted across all actions.
 2. **Explicit Deny Precedence**: If any statement (direct, role, or group) contains `effect: 'deny'` matching the requested action, access is immediately blocked.
 3. **Allow Statements & Ownership**: If an allow statement matches:
    - For `:self` actions (e.g. `profile:update:self`), verify `context.resourceOwnerId === identity.id`.
 4. **Implicit Deny**: If no matching statement is found, access is denied by default.
 
-## 2. Operational Event Logging vs Audit Trail
+## 3. Operational Logging vs Audit Trail
 - **Operational Logs**: Diagnostic logs for developer visibility (e.g. `iam.permission.evaluated`, `iam.user.status_updated`).
-- **Audit Logs**: Durable database records for security compliance (e.g. `iam_audit_logs` table tracking administrative changes).
+- **Audit Logs**: Durable database records for security compliance (`iam_audit_logs` table tracking administrative mutations).
 
-## 3. Fastify Route Guards
+## 4. Route Guards Convention
 ```typescript
 import { requirePermission, requireAuthentication } from '@packages/iam';
 
@@ -34,8 +37,8 @@ fastify.put('/users/:id', {
 }, handler);
 ```
 
-## 4. Mandatory Testing Expectations
-Every IAM or authorization change requires:
+## 5. Mandatory Testing Expectations
+Every authorization change requires:
 1. **Allow Cases**: Legitimate permissions allow operation.
 2. **Deny Precedence**: Explicit `DENY` statement strictly overrides any matching `ALLOW`.
 3. **Ownership Verification**: Resource-level ownership tests (`owner -> allowed`, `other user -> 403`, `unauthenticated -> 401`).

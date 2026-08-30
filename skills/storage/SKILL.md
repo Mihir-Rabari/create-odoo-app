@@ -1,16 +1,19 @@
 ---
-name: object-storage
-description: S3/MinIO StorageService abstraction, bucket management, upload conventions, and storage testing expectations
+name: storage
+description: S3/MinIO StorageService abstraction, bucket management, and object storage conventions.
 ---
 
-# Object Storage Skill
+# Storage Skill
 
-## 1. StorageService Abstraction
+## 1. When to Use
+Use this skill when uploading, downloading, or managing objects in S3-compatible storage (MinIO/AWS S3).
+
+## 2. StorageService Abstraction
 - All object storage operations must use `StorageService` from `@packages/shared`.
 - S3 client uses `@aws-sdk/client-s3` and is configured via environment variables (`S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_FORCE_PATH_STYLE`).
 - Never hardcode MinIO or AWS URLs into business logic.
 
-## 2. Usage Patterns
+## 3. Usage Pattern
 ```typescript
 import { StorageService } from '@packages/shared';
 
@@ -32,7 +35,7 @@ await storage.putObject('uploads/document.pdf', buffer, 'application/pdf');
 const data = await storage.getObject('uploads/document.pdf');
 ```
 
-## 3. Mandatory Testing Expectations
+## 4. Mandatory Testing Expectations
 - Test storage client error handling when credentials or configuration are invalid.
 - Verify MIME type and size checks before invoking storage writes.
 - Do not make unit tests dependent on live remote cloud S3 buckets; use local MinIO or controlled doubles.

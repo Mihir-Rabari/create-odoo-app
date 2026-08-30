@@ -36,23 +36,40 @@ async function runSmokeTest(): Promise<void> {
       '.env',
       'apps/web/package.json',
       'apps/web/src/app/layout.tsx',
+      'apps/web/AGENTS.md',
       'apps/api/package.json',
       'apps/api/src/server.ts',
+      'apps/api/AGENTS.md',
       'packages/auth/package.json',
+      'packages/auth/AGENTS.md',
       'packages/iam/package.json',
+      'packages/iam/AGENTS.md',
       'packages/config/package.json',
       'packages/config/src/app-config.ts',
       'packages/config/src/auth-config.ts',
       'packages/config/src/iam-config.ts',
       'packages/config/src/feature-config.ts',
       'packages/db/package.json',
+      'packages/db/AGENTS.md',
       'packages/openapi/package.json',
       'packages/shared/package.json',
       'packages/validation/package.json',
+      'skills/index.yaml',
       'skills/architecture/SKILL.md',
+      'skills/authentication/SKILL.md',
+      'skills/authorization/SKILL.md',
+      'skills/database/SKILL.md',
+      'skills/api/SKILL.md',
+      'skills/frontend/SKILL.md',
       'skills/security/SKILL.md',
       'skills/validation/SKILL.md',
+      'skills/testing/SKILL.md',
+      'skills/storage/SKILL.md',
+      'skills/email/SKILL.md',
+      'skills/realtime/SKILL.md',
+      'skills/observability/SKILL.md',
       'README.md',
+      'CHANGELOG.md',
       'AGENTS.md',
     ];
 
@@ -94,6 +111,15 @@ async function runSmokeTest(): Promise<void> {
       throw new Error('Expected README.md to start with "# Smoke Portal"');
     }
 
+    // Validate skills/index.yaml in generated project
+    const generatedIndex = await fs.promises.readFile(
+      path.join(tempDir, 'skills', 'index.yaml'),
+      'utf-8'
+    );
+    if (!generatedIndex.includes('skills:')) {
+      throw new Error('Expected generated skills/index.yaml to contain "skills:" list');
+    }
+
     // Validate absence of leaked private/dev files
     const forbiddenPaths = [
       'brain',
@@ -108,7 +134,7 @@ async function runSmokeTest(): Promise<void> {
       }
     }
 
-    console.log('\n\x1b[32m✔ Smoke test passed successfully! All 24 assertions verified.\x1b[0m\n');
+    console.log(`\n\x1b[32m✔ Smoke test passed successfully! All ${requiredPaths.length} assertions verified.\x1b[0m\n`);
   } finally {
     if (fs.existsSync(tempDir)) {
       console.log(`[Smoke Test] 🧹 Cleaning up temporary directory ${tempDir}...`);
