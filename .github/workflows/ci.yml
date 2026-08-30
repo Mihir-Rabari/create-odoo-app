@@ -25,16 +25,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.1.0
-
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+
+      - name: Enable Corepack & Prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.0 --activate
+        shell: bash
+
+      - name: Verify Environment Bootstrap
+        run: |
+          echo "=== Node & Package Manager Bootstrap Information ==="
+          node --version
+          pnpm --version
+          corepack --version
+        shell: bash
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

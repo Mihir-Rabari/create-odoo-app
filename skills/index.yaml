@@ -52,3 +52,7 @@ skills:
   - name: observability
     path: skills/observability/SKILL.md
     description: Structured logging, request correlation, Prometheus metrics, health probes, and sensitive data redaction.
+
+  - name: dependencies
+    path: skills/dependencies/SKILL.md
+    description: Monorepo dependency inventory, safe version upgrades, lockfile integrity, and compatibility verification.

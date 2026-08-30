@@ -68,6 +68,7 @@ async function runSmokeTest(): Promise<void> {
       'skills/email/SKILL.md',
       'skills/realtime/SKILL.md',
       'skills/observability/SKILL.md',
+      'skills/dependencies/SKILL.md',
       'README.md',
       'CHANGELOG.md',
       'AGENTS.md',

@@ -103,10 +103,11 @@ The project provides 13 reusable Agent Skills aligned with the **Agent Skills op
 * [`skills/email/SKILL.md`](skills/email/SKILL.md): Transactional email provider integration.
 * [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md): Redis Pub/Sub notification events.
 * [`skills/observability/SKILL.md`](skills/observability/SKILL.md): Prometheus metrics, Grafana dashboards, health probes.
+* [`skills/dependencies/SKILL.md`](skills/dependencies/SKILL.md): Monorepo dependency inventory, safe upgrades, lockfile integrity.
 
 Validate, list, inspect, and package skills at any time:
 ```bash
-pnpm skills:list      # List all 13 canonical skills with descriptions
+pnpm skills:list      # List all 14 canonical skills with descriptions
 pnpm skills:show <n>  # Display metadata and content for a skill
 pnpm skills:check     # Validate Agent Skills registry, frontmatter, and links
 pnpm skills:lint      # Structural markdown and frontmatter linter
@@ -143,6 +144,8 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 | `pnpm test:security` | Run dedicated IAM & authentication security tests |
 | `pnpm test:coverage` | Run Vitest test suite with v8 code coverage analysis |
 | `pnpm test:smoke` | Run generator smoke test in a temporary directory |
+| `pnpm test:dogfood` | Execute full unpacked generator dogfooding test |
+| `pnpm deps:check` | Audit direct external dependencies inventory |
 | `pnpm skills:check` | Validate Agent Skills registry, frontmatter, and links |
 | `pnpm skills:lint` | Run structural linter across all skill files |
 | `pnpm skills:pack` | Package skills into deterministic ZIP archives |

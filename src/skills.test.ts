@@ -28,7 +28,7 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     const content = await fs.promises.readFile(indexPath, 'utf-8');
     const skills = parseIndexYaml(content);
 
-    expect(skills.length).toBe(13);
+    expect(skills.length).toBe(14);
     const skillNames = skills.map((s) => s.name);
     expect(skillNames).toContain('architecture');
     expect(skillNames).toContain('authentication');
@@ -43,6 +43,7 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     expect(skillNames).toContain('email');
     expect(skillNames).toContain('realtime');
     expect(skillNames).toContain('observability');
+    expect(skillNames).toContain('dependencies');
   });
 
   it('should resolve relevant skills deterministically for domain tasks', () => {
@@ -73,6 +74,10 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
         resolved.add('frontend');
         resolved.add('testing');
       }
+      if (lower.includes('dep') || lower.includes('upgrade') || lower.includes('lockfile')) {
+        resolved.add('dependencies');
+        resolved.add('testing');
+      }
 
       return Array.from(resolved);
     }
@@ -91,6 +96,10 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     expect(iamSkills).toContain('authorization');
     expect(iamSkills).toContain('security');
     expect(iamSkills).toContain('testing');
+
+    const depSkills = resolveSkillsForTask('Audit monorepo dependencies and upgrade');
+    expect(depSkills).toContain('dependencies');
+    expect(depSkills).toContain('testing');
   });
 
   it('should pack a single skill into a deterministic ZIP and directory bundle', async () => {
@@ -111,13 +120,13 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     expect(frontmatter.name).toBe('authentication');
   });
 
-  it('should pack all 13 canonical skills into output directory', async () => {
+  it('should pack all 14 canonical skills into output directory', async () => {
     const count = await packAllSkills({
       outDir: tempOutDir,
       silent: true,
     });
 
-    expect(count).toBe(13);
+    expect(count).toBe(14);
 
     const canonicalNames = [
       'architecture',
@@ -133,6 +142,7 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
       'email',
       'realtime',
       'observability',
+      'dependencies',
     ];
 
     for (const name of canonicalNames) {

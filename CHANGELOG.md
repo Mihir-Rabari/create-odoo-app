@@ -38,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Skill CLI utilities: `pnpm skills:list`, `pnpm skills:show <name>`, `pnpm skills:lint`, and `pnpm skills:export`.
   - Deterministic context discovery & skill packaging automated test suite (`src/skills.test.ts`).
   - Skill composition matrix and clean separation of repository guidance (`AGENTS.md`) from portable skill bundles (`skills/*/`).
+- **Dependency Modernization, CI Bootstrap Repair & Dogfooding Verification (Phase 6.2)**:
+  - Fixed GitHub Actions pnpm bootstrap failure across Ubuntu and Windows matrix using `actions/setup-node@v4` with native `corepack enable` and `corepack prepare pnpm@11.1.0 --activate`.
+  - Added automated dependency baseline checking tool (`scripts/check-deps.ts` / `pnpm deps:check`).
+  - Added 14th canonical skill: `skills/dependencies/SKILL.md` (Monorepo dependency inventory, safe upgrades, lockfile integrity).
+  - Implemented end-to-end generator dogfooding test suite (`scripts/dogfood-test.ts` / `pnpm test:dogfood`) testing scaffolding, metadata transforms, skill verification, and clean unpacked distribution.
+  - Formalized permanent dependency upgrade policy (Rule 11) in `AGENTS.md`.
 - **Developer Configuration Surface (`packages/config`)**:
   - `app-config.ts`: Application constants, metadata, pagination limits.
   - `auth-config.ts`: Authentication settings (`registrationEnabled`, `defaultIdentity`, `sessionTtlSeconds`, `cookieName`, `minPasswordLength`).

@@ -154,6 +154,7 @@ async function verifyRelease(): Promise<void> {
       'skills/architecture/SKILL.md',
       'skills/security/SKILL.md',
       'skills/testing/SKILL.md',
+      'skills/dependencies/SKILL.md',
       'README.md',
       'CHANGELOG.md',
       'AGENTS.md',

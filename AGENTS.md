@@ -1,6 +1,6 @@
 # AGENTS.md — Repository Operating Manual
 
-> **Scope**: Operating instructions, architectural rules, testing doctrine, skill discovery, skill packaging, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
+> **Scope**: Operating instructions, architectural rules, testing doctrine, skill discovery, skill packaging, dependency upgrade policy, and package conventions for automated coding agents and software engineers contributing to this repository or using the `create-odoo-app` generator.
 
 ---
 
@@ -71,6 +71,12 @@ This repository is a **pnpm workspaces monorepo** and generator for production-r
     - Explicit `DENY` statements strictly override `ALLOW` statements.
     - Self-resource permissions (`:self`) strictly enforce that `context.resourceOwnerId === identity.id`.
     - Suspended and disabled accounts are denied all authenticated operations.
+11. **Rule 11 (Dependency Upgrade Policy)**:
+    - Do not blindly upgrade dependencies.
+    - Check current stable version and read relevant migration notes.
+    - Verify peer compatibility across Node 20/22, Next.js, Fastify, Drizzle, and Zod.
+    - Update `pnpm-lock.yaml` deterministically; CI enforces frozen lockfiles (`--frozen-lockfile`).
+    - Run targeted tests, generator smoke test, and full quality gate before completing any upgrade.
 
 ---
 
@@ -83,7 +89,7 @@ All automated coding agents and software engineers must strictly adhere to these
 3. **Rule T3 (Security Adversarial Testing)**: Security-sensitive changes require explicit adversarial negative tests (privilege escalation, unauthorized access, expired sessions, mismatched resource ownership).
 4. **Rule T4 (API Contracts)**: Every API route must be tested with Fastify `app.inject()` verifying validation (400), authentication (401), authorization (403), and success shapes.
 5. **Rule T5 (Database Integrity)**: Database schema modifications require migration verification and seed idempotency tests.
-6. **Rule T6 (Generator Smoke Coverage)**: Generator changes must pass full distributable smoke testing (`pnpm test:smoke`, `pnpm verify:release`).
+6. **Rule T6 (Generator Smoke Coverage)**: Generator changes must pass full distributable smoke testing (`pnpm test:smoke`, `pnpm test:dogfood`, `pnpm verify:release`).
 7. **Rule T7 (Quality Gates)**: Do not reduce coverage thresholds or delete tests to make a build pass.
 8. **Rule T8 (Pre-Completion Verification)**: Always run the full verification gate (`pnpm verify`) before declaring any task complete.
 
@@ -99,8 +105,11 @@ pnpm dev              # Launch web and api concurrently
 pnpm dev:api          # Launch Fastify API in watch mode
 pnpm dev:web          # Launch Next.js web application
 
+# Dependency Management & Maintenance
+pnpm deps:check       # Inspect and audit direct dependency baselines
+
 # Agent Skills Management & Packaging
-pnpm skills:list      # List all 13 canonical skills with descriptions
+pnpm skills:list      # List all 14 canonical skills with descriptions
 pnpm skills:show <n>  # Display metadata and content for a skill
 pnpm skills:check     # Validate Agent Skills registry, frontmatter, and links
 pnpm skills:lint      # Structural markdown and frontmatter linter
@@ -111,6 +120,7 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 pnpm test             # Run Vitest test suite across all packages
 pnpm test:coverage    # Run Vitest test suite with v8 coverage analysis
 pnpm test:smoke       # Run generator smoke test in temporary directory
+pnpm test:dogfood     # Execute end-to-end generator dogfooding test
 pnpm test:security    # Run dedicated security & adversarial test suites
 pnpm typecheck        # Run TypeScript type check across all packages + CLI
 pnpm lint             # Run linting across all packages
@@ -147,7 +157,7 @@ pnpm health           # Run end-to-end infrastructure health check
 
 ## 6. Agent Skills Standard, Discovery & Composition
 
-This repository provides 13 standardized Agent Skills under `skills/` following the **Agent Skills open standard**. Use `skills/index.yaml` as the machine-readable discovery registry.
+This repository provides 14 standardized Agent Skills under `skills/` following the **Agent Skills open standard**. Use `skills/index.yaml` as the machine-readable discovery registry.
 
 ### Repository Guidance vs Skill Bundles
 - **`AGENTS.md`**: Persistent repository operating manual describing architecture, commands, and rules.
@@ -172,6 +182,7 @@ Before modifying a subsystem:
 | **Frontend UI & Forms** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | `authorization`, `testing` |
 | **Observability & Logging** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | `api`, `testing` |
 | **Object Storage & Uploads** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | `validation`, `security`, `testing` |
+| **Dependency Modernization** | [`skills/dependencies/SKILL.md`](skills/dependencies/SKILL.md) | `testing`, `security` |
 
 ### Canonical Skills Index
 
@@ -190,3 +201,4 @@ Before modifying a subsystem:
 | **Email** | [`skills/email/SKILL.md`](skills/email/SKILL.md) | Transactional email provider integration, templates, and delivery rules. |
 | **Realtime** | [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md) | Redis Pub/Sub messaging and realtime notification events. |
 | **Observability** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | Structured logging, request correlation, Prometheus metrics, health probes, and sensitive data redaction. |
+| **Dependencies** | [`skills/dependencies/SKILL.md`](skills/dependencies/SKILL.md) | Monorepo dependency inventory, safe version upgrades, lockfile integrity, and compatibility verification. |
