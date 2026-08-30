@@ -8,20 +8,66 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
+async function scanDirectoryForMachinePaths(dir: string): Promise<string[]> {
+  const violations: string[] = [];
+  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+
+  const winUserPrefix = ['C:', '\\', 'Users', '\\'].join('');
+  const devProjectPrefix = ['K:', '\\', 'Projects', '\\', 'create-odoo-app'].join('');
+  const posixUserPrefix = ['/Users', '/', 'mihir', '/'].join('');
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      const subViolations = await scanDirectoryForMachinePaths(fullPath);
+      violations.push(...subViolations);
+    } else if (
+      entry.isFile() &&
+      !entry.name.endsWith('.png') &&
+      !entry.name.endsWith('.ico') &&
+      !entry.name.endsWith('.tgz') &&
+      !entry.name.endsWith('.lock') &&
+      !entry.name.endsWith('.yaml') &&
+      !entry.name.endsWith('.map') &&
+      entry.name !== 'verify-release.ts' // Skip self
+    ) {
+      const content = await fs.promises.readFile(fullPath, 'utf-8');
+      if (
+        content.includes(winUserPrefix) ||
+        content.includes(devProjectPrefix) ||
+        content.includes(posixUserPrefix)
+      ) {
+        violations.push(fullPath);
+      }
+    }
+  }
+
+  return violations;
+}
+
 async function verifyRelease(): Promise<void> {
   console.log('\x1b[35m=== Running Full Pre-Release Quality Gate & Distributable Verification ===\x1b[0m\n');
 
   const tempDir = path.join(os.tmpdir(), `create-odoo-app-release-${Date.now()}`);
 
   try {
-    // 1. Build Monorepo & CLI
-    console.log('[Release Gate] 🔨 Step 1: Compiling all packages and generator CLI...');
+    // 1. Version Invariants Check
+    console.log('[Release Gate] 🏷️  Step 1: Checking package metadata and version consistency...');
+    const rootPkg = JSON.parse(await fs.promises.readFile(path.join(rootDir, 'package.json'), 'utf-8'));
+    if (rootPkg.name !== 'create-odoo-app') {
+      throw new Error(`Invalid package name in package.json: ${rootPkg.name}`);
+    }
+    console.log(`[Release Gate] ✔ Package version verified: ${rootPkg.name}@${rootPkg.version}`);
+
+    // 2. Build Monorepo & CLI
+    console.log('\n[Release Gate] 🔨 Step 2: Compiling all packages and generator CLI...');
     execSync('pnpm build', { cwd: rootDir, stdio: 'inherit' });
 
-    // 2. Package Tarball via npm pack
-    console.log('\n[Release Gate] 📦 Step 2: Packaging distributable tarball with npm pack...');
+    // 3. Package Tarball via npm pack
+    console.log('\n[Release Gate] 📦 Step 3: Packaging distributable tarball with npm pack...');
     const packOutput = execSync('npm pack', { cwd: rootDir, encoding: 'utf-8' }).trim();
-    const tarballName = packOutput.split('\n').pop()?.trim() || 'create-odoo-app-1.0.0.tgz';
+    const tarballName = packOutput.split('\n').pop()?.trim() || `create-odoo-app-${rootPkg.version}.tgz`;
     const tarballPath = path.join(rootDir, tarballName);
 
     if (!fs.existsSync(tarballPath)) {
@@ -30,11 +76,11 @@ async function verifyRelease(): Promise<void> {
 
     console.log(`[Release Gate] ✔ Packaged tarball: ${tarballName}`);
 
-    // 3. Prepare clean verification directory
+    // 4. Prepare clean verification directory
     await fs.promises.mkdir(tempDir, { recursive: true });
 
-    // 4. Extract tarball into temp directory
-    console.log(`[Release Gate] 📂 Step 3: Unpacking tarball in ${tempDir}...`);
+    // 5. Extract tarball into temp directory
+    console.log(`[Release Gate] 📂 Step 4: Unpacking tarball in ${tempDir}...`);
     execSync(`tar -xzf "${tarballPath}" -C "${tempDir}"`, { stdio: 'ignore' });
 
     const packageRoot = path.join(tempDir, 'package');
@@ -42,8 +88,8 @@ async function verifyRelease(): Promise<void> {
       throw new Error(`Expected unpacked 'package' directory in ${tempDir}`);
     }
 
-    // 5. Audit unpacked package contents
-    console.log('[Release Gate] 🔍 Step 4: Auditing unpacked package contents for leakage...');
+    // 6. Audit unpacked package contents for private files
+    console.log('[Release Gate] 🔍 Step 5: Auditing unpacked package contents for leaked files...');
     const forbiddenLeaked = [
       path.join(packageRoot, '.git'),
       path.join(packageRoot, 'brain'),
@@ -58,8 +104,16 @@ async function verifyRelease(): Promise<void> {
       }
     }
 
-    // 6. Execute Generator from Unpacked Artifact
-    console.log('[Release Gate] 🚀 Step 5: Executing create-odoo-app from unpacked distribution...');
+    // 7. Audit for hardcoded local machine paths in packaged text files
+    console.log('[Release Gate] 🔍 Step 6: Scanning package files for hardcoded developer paths...');
+    const pathViolations = await scanDirectoryForMachinePaths(packageRoot);
+    if (pathViolations.length > 0) {
+      throw new Error(`LEAK DETECTED: Hardcoded developer paths found in files:\n${pathViolations.join('\n')}`);
+    }
+    console.log('[Release Gate] ✔ Zero hardcoded machine paths found in packaged files.');
+
+    // 8. Execute Generator from Unpacked Artifact
+    console.log('[Release Gate] 🚀 Step 7: Executing create-odoo-app from unpacked distribution...');
     const targetAppDir = path.join(tempDir, 'enterprise-portal');
     const cliPath = path.join(packageRoot, 'dist', 'cli.js');
 
@@ -68,8 +122,8 @@ async function verifyRelease(): Promise<void> {
       stdio: 'inherit',
     });
 
-    // 7. Validate Generated Application
-    console.log('[Release Gate] 🔍 Step 6: Validating generated enterprise-portal project structure...');
+    // 9. Validate Generated Application
+    console.log('[Release Gate] 🔍 Step 8: Validating generated enterprise-portal project structure...');
     const requiredFiles = [
       'package.json',
       'pnpm-workspace.yaml',
@@ -111,7 +165,7 @@ async function verifyRelease(): Promise<void> {
       throw new Error('Expected README.md to contain "# Enterprise Portal"');
     }
 
-    // 8. Clean up root tarball
+    // 10. Clean up root tarball
     if (fs.existsSync(tarballPath)) {
       await fs.promises.unlink(tarballPath);
     }

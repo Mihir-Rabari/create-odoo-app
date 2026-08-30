@@ -68,6 +68,7 @@ my-awesome-app/
 ├── scripts/               # Cross-platform setup, smoke test, and health check scripts
 ├── docker-compose.yml     # Local infrastructure (PostgreSQL, Redis, MinIO, Prometheus, Grafana)
 ├── AGENTS.md              # Coding Agent & Developer Operating Manual
+├── CHANGELOG.md           # Release history and Keep a Changelog documentation
 ├── .env.example           # Environment template with local defaults
 └── package.json           # Monorepo root configuration
 ```
@@ -97,7 +98,7 @@ The project includes 13 reference guides designed for coding agents and develope
 * [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md): Next.js App Router, TanStack Query, AuthContext.
 * [`skills/security/SKILL.md`](skills/security/SKILL.md): Inviolable security rules (never trust client input, server guards).
 * [`skills/validation/SKILL.md`](skills/validation/SKILL.md): Input validation rules, bounds, dates, pagination.
-* [`skills/testing/SKILL.md`](skills/testing/SKILL.md): Vitest and Fastify injection testing patterns.
+* [`skills/testing/SKILL.md`](skills/testing/SKILL.md): Testing doctrine, testing pyramid, AAA standard, adversarial tests.
 * [`skills/storage/SKILL.md`](skills/storage/SKILL.md): MinIO/S3 `StorageService` abstractions.
 * [`skills/email/SKILL.md`](skills/email/SKILL.md): Transactional email provider integration.
 * [`skills/realtime/SKILL.md`](skills/realtime/SKILL.md): Redis Pub/Sub notification events.
@@ -120,7 +121,7 @@ The project includes 13 reference guides designed for coding agents and develope
 
 ---
 
-## 7. Monorepo Scripts
+## 7. Monorepo & Quality Commands
 
 | Command | Description |
 | :--- | :--- |
@@ -129,7 +130,12 @@ The project includes 13 reference guides designed for coding agents and develope
 | `pnpm dev:web` | Run Next.js in development mode (`apps/web`) |
 | `pnpm build` | Compile all workspace packages, applications, and CLI binary |
 | `pnpm test` | Run complete Vitest test suite across all packages |
+| `pnpm test:security` | Run dedicated IAM & authentication security tests |
+| `pnpm test:coverage` | Run Vitest test suite with v8 code coverage analysis |
 | `pnpm test:smoke` | Run generator smoke test in a temporary directory |
+| `pnpm verify` | Run full local quality gate (lint + typecheck + test + smoke + build) |
+| `pnpm verify:release` | Execute pre-release packaging, package audit, and unpacked generator test |
+| `pnpm release:check` | Canonical pre-release verification checklist command |
 | `pnpm typecheck` | Run strict TypeScript verification across all packages + CLI |
 | `pnpm lint` | Run code quality linters across all packages |
 | `pnpm setup` | Cross-platform idempotent setup and database seeding |
@@ -140,3 +146,23 @@ The project includes 13 reference guides designed for coding agents and develope
 | `pnpm infra:down` | Stop Docker Compose infrastructure |
 | `pnpm infra:reset` | Stop infrastructure and purge all Docker volume data |
 | `pnpm health` | Execute end-to-end infrastructure health check script |
+
+---
+
+## 8. Release Engineering, CI/CD & Publishing
+
+### Automated CI/CD Pipeline
+- **Continuous Integration (`.github/workflows/ci.yml`)**: Runs on pull requests and pushes to `main`. Tests on Ubuntu and Windows across Node.js 20.x and 22.x with dependency caching and full quality gates (`pnpm verify`).
+- **Release Automation (`.github/workflows/release.yml`)**: Automatically triggers on Git tags (`v*.*.*`) or manual trigger. Builds, audits package contents for leaks, publishes to npm with `--access public --provenance`, and generates a GitHub Release.
+
+### Semantic Versioning Policy
+- **`patch` (e.g. 1.0.1)**: Bug fixes, security patches, documentation updates.
+- **`minor` (e.g. 1.1.0)**: Backward-compatible additions to the generator, CLI options, or template packages.
+- **`major` (e.g. 2.0.0)**: Breaking CLI argument changes, major architectural changes to generated templates.
+
+### Pre-Release Verification
+Before publishing or tagging a release, run:
+```bash
+pnpm release:check
+```
+This builds all packages, packages the `.tgz` artifact via `npm pack`, scans the tarball contents to guarantee zero leaked secrets or local machine paths, unpacks into a clean temporary directory, and runs the generator from the unpacked distribution to verify the generated application.
