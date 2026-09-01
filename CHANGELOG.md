@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.2] - 2026-09-01
+
+### Fixed
+- Transformed root build/typecheck scripts in generated applications so `tsc -p tsconfig.cli.json` is not executed in generated projects.
+
 ## [1.0.1] - 2026-09-01
 
 ### Fixed
