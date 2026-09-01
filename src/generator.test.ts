@@ -97,6 +97,8 @@ describe('Generator Unit Tests', () => {
       expect(fs.existsSync(path.join(testAppDir, 'pnpm-workspace.yaml'))).toBe(true);
       expect(fs.existsSync(path.join(testAppDir, '.env.example'))).toBe(true);
       expect(fs.existsSync(path.join(testAppDir, '.env'))).toBe(true);
+      expect(fs.existsSync(path.join(testAppDir, '.gitignore'))).toBe(true);
+      expect(fs.existsSync(path.join(testAppDir, '.npmignore'))).toBe(false);
       expect(fs.existsSync(path.join(testAppDir, 'apps/web/package.json'))).toBe(true);
       expect(fs.existsSync(path.join(testAppDir, 'apps/api/package.json'))).toBe(true);
       expect(fs.existsSync(path.join(testAppDir, 'packages/auth/package.json'))).toBe(true);

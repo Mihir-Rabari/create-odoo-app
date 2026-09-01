@@ -37,6 +37,75 @@ const RESERVED_NAMES = new Set([
   '.git',
 ]);
 
+export const DEFAULT_GITIGNORE_CONTENT = `# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment Variables & Secrets
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Build Outputs & Bundles
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Coverage & Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs & Diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE & Editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS & File System Artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker Persistent Volumes
+postgres-data/
+minio-data/
+redis-data/
+prometheus-data/
+grafana-data/
+.docker/
+docker-data/
+
+# Temporary / Scratch Files
+tmp/
+temp/
+*.tmp
+*.tgz
+`;
+
 /**
  * Validates the requested project name against npm naming rules and path security.
  */
@@ -165,14 +234,25 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
   await transformProjectMetadata(targetDir, packageName, humanTitle);
   logger.success('Project metadata transformed.');
 
-  // 6. Setup Environment Files
-  logger.step(3, 6, 'Creating local environment template...');
+  // 6. Setup Environment & Ignore Files
+  logger.step(3, 6, 'Creating local environment template & .gitignore...');
   const envExamplePath = path.join(targetDir, '.env.example');
   const envPath = path.join(targetDir, '.env');
   if (fs.existsSync(envExamplePath) && !fs.existsSync(envPath)) {
     await fs.promises.copyFile(envExamplePath, envPath);
   }
-  logger.success('Environment configured (.env.example, .env).');
+
+  // Ensure preconfigured .gitignore is always present in generated application
+  const gitignorePath = path.join(targetDir, '.gitignore');
+  await fs.promises.writeFile(gitignorePath, DEFAULT_GITIGNORE_CONTENT, 'utf-8');
+
+  // Remove any stray .npmignore from generated project
+  const npmignorePath = path.join(targetDir, '.npmignore');
+  if (fs.existsSync(npmignorePath)) {
+    await fs.promises.unlink(npmignorePath);
+  }
+
+  logger.success('Environment & .gitignore configured (.env.example, .env, .gitignore).');
 
   // 7. Initialize Git (optional)
   if (!skipGit) {

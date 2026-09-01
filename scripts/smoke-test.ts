@@ -34,6 +34,7 @@ async function runSmokeTest(): Promise<void> {
       'docker-compose.yml',
       '.env.example',
       '.env',
+      '.gitignore',
       'apps/web/package.json',
       'apps/web/src/app/layout.tsx',
       'apps/web/AGENTS.md',

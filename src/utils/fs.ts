@@ -13,6 +13,7 @@ export const TEMPLATE_IGNORES = [
   '.vscode',
   '.DS_Store',
   'Thumbs.db',
+  '.npmignore',
 
   // Build and dependency outputs
   'node_modules',

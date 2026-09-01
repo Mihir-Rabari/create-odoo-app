@@ -136,6 +136,7 @@ async function verifyRelease(): Promise<void> {
       'pnpm-workspace.yaml',
       '.env.example',
       '.env',
+      '.gitignore',
       'apps/web/package.json',
       'apps/web/AGENTS.md',
       'apps/api/package.json',

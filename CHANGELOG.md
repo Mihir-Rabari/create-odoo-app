@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.3] - 2026-09-01
+
+### Added
+- Preconfigured `.gitignore` file guaranteed to be created in all scaffolded applications, ignoring `node_modules`, `.pnpm-store`, environment secrets (`.env`, `.env.*`), build outputs (`dist`, `.next`), coverage, temporary files, and Docker volume data directories.
+- Filtered out `.npmignore` from generated projects.
+
 ## [1.0.2] - 2026-09-01
 
 ### Fixed
