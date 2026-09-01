@@ -31,7 +31,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Enable Corepack & Prepare pnpm
         run: |
@@ -66,15 +65,9 @@ jobs:
       - name: Full Quality Gate & Pre-Release Verification
         run: pnpm release:check
 
-      - name: Publish to npm Registry
+      - name: Publish to npm Registry via Trusted Publishing (OIDC)
         if: ${{ !inputs.dry_run }}
-        run: |
-          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          fi
-          npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
 
       - name: Create GitHub Release
         if: ${{ !inputs.dry_run && startsWith(github.ref, 'refs/tags/v') }}
