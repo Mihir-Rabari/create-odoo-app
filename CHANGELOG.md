@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-09-01
+
+### Fixed
+- Tailored scripts in generated user applications: removed generator-specific CLI build/release scripts (`build:cli`, `verify:release`, `release:check`, `release:pack`, `test:smoke`, `test:dogfood`) from generated `package.json`.
+- Streamlined `pnpm typecheck`, `pnpm build`, and `pnpm verify` commands in generated projects.
+
 ## [1.0.0] - 2026-08-30
 
 ### Added

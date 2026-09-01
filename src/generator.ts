@@ -227,15 +227,23 @@ export async function transformProjectMetadata(
 
     pkg.name = packageName;
     pkg.description = `${humanTitle} - Full-Stack Monorepo Application`;
-    pkg.private = true;
-
     // Remove generator-specific binary & publish entries from generated project
     delete pkg.bin;
     delete pkg.files;
+    delete pkg.scripts['build:cli'];
+    delete pkg.scripts['verify:release'];
+    delete pkg.scripts['release:check'];
+    delete pkg.scripts['release:pack'];
+    delete pkg.scripts['test:smoke'];
+    delete pkg.scripts['test:dogfood'];
+    delete pkg.scripts['audit:security'];
 
-    // Add setup script
+    // Tailor scripts for generated monorepo application
     pkg.scripts = {
       ...pkg.scripts,
+      build: 'pnpm --filter "@packages/*" build && pnpm --filter "@app/*" build',
+      typecheck: 'pnpm --filter "@packages/*" build && pnpm --recursive typecheck',
+      verify: 'pnpm skills:check && pnpm skills:lint && pnpm lint && pnpm typecheck && pnpm test && pnpm build',
       setup: 'tsx scripts/setup.ts',
     };
 
