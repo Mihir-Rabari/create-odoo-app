@@ -271,7 +271,7 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
   if (!skipInstall) {
     logger.step(5, 6, 'Installing dependencies with pnpm...');
     try {
-      execSync('pnpm install', { cwd: targetDir, stdio: 'inherit' });
+      execSync('pnpm install --ignore-scripts', { cwd: targetDir, stdio: 'inherit' });
       logger.success('Dependencies installed successfully.');
     } catch {
       logger.warn('pnpm install failed or pnpm not installed. Please run "pnpm install" manually.');

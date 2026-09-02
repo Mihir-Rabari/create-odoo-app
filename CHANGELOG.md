@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.10] - 2026-09-02
+
+### Fixed
+- Automated silent and safe pnpm dependency installs: configured `ignore-scripts=true` in `.npmrc` and invoked `pnpm install --ignore-scripts` during project generation to ensure immediate, error-free setup on pnpm v10 and v11.
+
 ## [1.0.9] - 2026-09-02
 
 ### Fixed
