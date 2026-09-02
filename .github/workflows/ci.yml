@@ -45,7 +45,7 @@ jobs:
         shell: bash
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Agent Skills Standard Verification
         run: pnpm skills:check

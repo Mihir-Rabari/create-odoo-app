@@ -60,7 +60,7 @@ jobs:
         shell: bash
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Full Quality Gate & Pre-Release Verification
         run: pnpm release:check
