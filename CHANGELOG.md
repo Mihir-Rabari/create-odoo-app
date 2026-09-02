@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.5] - 2026-09-02
+
+### Fixed
+- Workspace package resolution in root scripts: configured root `dependencies` and `tsconfig.base.json` path mappings so root scripts (`pnpm health`, `pnpm setup`, `scripts/health-check.ts`) resolve `@packages/*` directly in both generator and generated monorepo apps.
+
 ## [1.0.4] - 2026-09-01
 
 ### Added

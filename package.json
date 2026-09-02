@@ -1,6 +1,6 @@
 {
   "name": "create-odoo-app",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Production-grade full-stack application generator with Next.js, Fastify, PostgreSQL, Redis, MinIO, and Identity & IAM system",
   "type": "module",
   "bin": {
@@ -113,6 +113,15 @@
     "infra:reset": "docker compose down -v",
     "infra:logs": "docker compose logs -f",
     "health": "tsx scripts/health-check.ts"
+  },
+  "dependencies": {
+    "@packages/auth": "workspace:*",
+    "@packages/config": "workspace:*",
+    "@packages/db": "workspace:*",
+    "@packages/iam": "workspace:*",
+    "@packages/openapi": "workspace:*",
+    "@packages/shared": "workspace:*",
+    "@packages/validation": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.5",
