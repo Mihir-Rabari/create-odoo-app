@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.6] - 2026-09-02
+
+### Fixed
+- Fixed `npm error code EUNSUPPORTEDPROTOCOL` on `npx create-odoo-app`: removed `workspace:*` dependencies from root `package.json` so `npm` and `npx` install and execute the generator cleanly on all platforms.
+- Configured path aliases in root `tsconfig.json` so root scripts (`scripts/health-check.ts`, `scripts/setup.ts`) resolve internal packages directly.
+
 ## [1.0.5] - 2026-09-02
 
 ### Fixed

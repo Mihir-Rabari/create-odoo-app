@@ -7,28 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@packages/auth':
-        specifier: workspace:*
-        version: link:packages/auth
-      '@packages/config':
-        specifier: workspace:*
-        version: link:packages/config
-      '@packages/db':
-        specifier: workspace:*
-        version: link:packages/db
-      '@packages/iam':
-        specifier: workspace:*
-        version: link:packages/iam
-      '@packages/openapi':
-        specifier: workspace:*
-        version: link:packages/openapi
-      '@packages/shared':
-        specifier: workspace:*
-        version: link:packages/shared
-      '@packages/validation':
-        specifier: workspace:*
-        version: link:packages/validation
     devDependencies:
       '@types/node':
         specifier: ^22.13.5
