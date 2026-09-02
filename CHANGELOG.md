@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.7] - 2026-09-02
+
+### Fixed
+- Direct TypeScript source exports for workspace packages: updated `packages/*/package.json` exports to point directly to `src/index.ts`, enabling instant hot-reloading, `pnpm db:migrate`, and `pnpm db:seed` without requiring pre-compilation of `dist`.
+- Updated MinIO and MinIO Client image tags in `docker-compose.yml` to standard reliable tags.
+
 ## [1.0.6] - 2026-09-02
 
 ### Fixed
