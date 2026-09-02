@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.9] - 2026-09-02
+
+### Fixed
+- Fixed pnpm v10/v11 `ERR_PNPM_IGNORED_BUILDS` on scaffolded apps: cleanly configured `onlyBuiltDependencies` in `pnpm-workspace.yaml` allowing esbuild and Next.js native binaries to run builds without prompting `pnpm approve-builds`.
+- Cleaned up `.npmrc` configuration across workspace.
+
 ## [1.0.8] - 2026-09-02
 
 ### Fixed

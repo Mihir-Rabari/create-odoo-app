@@ -1,6 +1,6 @@
 {
   "name": "create-odoo-app",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Production-grade full-stack application generator with Next.js, Fastify, PostgreSQL, Redis, MinIO, and Identity & IAM system",
   "type": "module",
   "bin": {
