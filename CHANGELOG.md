@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.8] - 2026-09-02
+
+### Fixed
+- Fixed unstyled frontend: packaged `apps/web/postcss.config.mjs`, `apps/web/next.config.mjs`, and `apps/web/components.json` in published npm bundle so Tailwind CSS generates all styles in scaffolded Next.js apps.
+- Updated `pnpm-workspace.yaml` with `onlyBuiltDependencies: [esbuild]` to eliminate pnpm configuration deprecation warnings.
+
 ## [1.0.7] - 2026-09-02
 
 ### Fixed

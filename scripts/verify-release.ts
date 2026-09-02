@@ -138,6 +138,8 @@ async function verifyRelease(): Promise<void> {
       '.env',
       '.gitignore',
       'apps/web/package.json',
+      'apps/web/next.config.mjs',
+      'apps/web/postcss.config.mjs',
       'apps/web/AGENTS.md',
       'apps/api/package.json',
       'apps/api/AGENTS.md',

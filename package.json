@@ -1,6 +1,6 @@
 {
   "name": "create-odoo-app",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Production-grade full-stack application generator with Next.js, Fastify, PostgreSQL, Redis, MinIO, and Identity & IAM system",
   "type": "module",
   "bin": {
@@ -11,8 +11,9 @@
     "apps/web/src",
     "apps/web/public",
     "apps/web/package.json",
-    "apps/web/next.config.js",
-    "apps/web/postcss.config.js",
+    "apps/web/next.config.mjs",
+    "apps/web/postcss.config.mjs",
+    "apps/web/components.json",
     "apps/web/tailwind.config.ts",
     "apps/web/tsconfig.json",
     "apps/web/AGENTS.md",
@@ -121,10 +122,5 @@
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }

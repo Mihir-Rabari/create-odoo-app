@@ -36,6 +36,8 @@ async function runSmokeTest(): Promise<void> {
       '.env',
       '.gitignore',
       'apps/web/package.json',
+      'apps/web/next.config.mjs',
+      'apps/web/postcss.config.mjs',
       'apps/web/src/app/layout.tsx',
       'apps/web/AGENTS.md',
       'apps/api/package.json',
