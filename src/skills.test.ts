@@ -23,7 +23,7 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     await fs.promises.mkdir(tempOutDir, { recursive: true });
   });
 
-  it('should parse skills/index.yaml and discover all 13 canonical skills', async () => {
+  it('should parse skills/index.yaml and discover all 14 canonical skills', async () => {
     const indexPath = path.join(rootDir, 'skills', 'index.yaml');
     const content = await fs.promises.readFile(indexPath, 'utf-8');
     const skills = parseIndexYaml(content);
