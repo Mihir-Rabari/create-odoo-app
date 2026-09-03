@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LogIn, Lock, Mail, AlertCircle, ShieldAlert, KeyRound } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,8 +34,8 @@ export default function LoginPage() {
     try {
       await login({ email, password });
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Login failed. Please check your credentials.'));
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from './app.js';
+import { isDatabaseAvailable } from './test-support/database.js';
 import type { FastifyInstance } from 'fastify';
 
 describe('Adversarial & Security API Tests', () => {
   let app: FastifyInstance;
+  let hasDatabase = false;
 
   beforeAll(async () => {
     app = buildApp();
     await app.ready();
+    hasDatabase = await isDatabaseAvailable();
   });
 
   afterAll(async () => {
@@ -15,7 +18,7 @@ describe('Adversarial & Security API Tests', () => {
   });
 
   describe('Zero-Trust Input & Privilege Escalation', () => {
-    it('POST /api/v1/auth/signup should reject or sanitize spoofed role/identityType fields', async () => {
+    it('POST /api/v1/auth/signup rejects a payload carrying privilege fields', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/signup',
@@ -29,17 +32,35 @@ describe('Adversarial & Security API Tests', () => {
         },
       });
 
-      // Status: 201 (success without DB), 400 (strict validation), 500/503 (offline DB)
-      expect([201, 400, 500, 503]).toContain(response.statusCode);
+      // The signup schema is `.strict()`, so unknown keys are refused outright rather
+      // than silently dropped. This is checked before the database is touched, which is
+      // why it holds with or without infrastructure running.
+      expect(response.statusCode).toBe(400);
+      expect(response.json().code).toBe('VALIDATION_ERROR');
+    });
 
-      if (response.statusCode === 201) {
-        const json = response.json();
-        // Crucial: Must NEVER be ROOT
-        expect(json.user.identityType).not.toBe('ROOT');
-        expect(json.user.identityType).toBe('EXTERNAL_USER');
-        // Crucial: Must NEVER return passwordHash
-        expect(json.user.passwordHash).toBeUndefined();
+    it('a legitimate signup never yields a ROOT identity or leaks a password hash', async (ctx) => {
+      // Explicitly skipped rather than silently passing when no database is running,
+      // so the test report distinguishes "verified" from "not run".
+      if (!hasDatabase) {
+        ctx.skip();
+        return;
       }
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/signup',
+        payload: {
+          email: `adversary-${Date.now()}@example.com`,
+          password: 'Password123!',
+          name: 'Adversary User',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const json = response.json();
+      expect(json.user.identityType).toBe('EXTERNAL_USER');
+      expect(json.user.passwordHash).toBeUndefined();
     });
 
     it('should reject malformed session cookie gracefully without 500 error', async () => {
@@ -62,11 +83,14 @@ describe('Adversarial & Security API Tests', () => {
         url: '/api/v1/iam/users/non-existent-id-format',
       });
 
-      expect([400, 401, 404]).toContain(response.statusCode);
+      // Schema validation runs in preValidation, ahead of the auth preHandler, so a
+      // malformed UUID is always a 400 regardless of authentication or database state.
+      expect(response.statusCode).toBe(400);
       const body = response.body;
       expect(body).not.toContain('postgres://');
       expect(body).not.toContain('password');
       expect(body).not.toContain('node_modules');
+      expect(body).not.toContain('at Object.');
     });
   });
 });

@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { NonEmptyStringSchema } from './common.js';
+import {
+  NonEmptyStringSchema,
+  IsoDateTimeOutSchema,
+  NullableIsoDateTimeOutSchema,
+} from './common.js';
 import { PaginationQuerySchema } from './pagination.js';
 import { UserStatusEnum, IdentityTypeEnum } from './auth.js';
 
@@ -23,7 +27,9 @@ export const PolicyStatementSchema = z.object({
   effect: PolicyStatementEffectEnum,
   actions: z.array(z.string().min(1)).min(1, 'At least one action is required'),
   resources: z.array(z.string()).default(['*']),
-  conditions: z.record(z.unknown()).optional(),
+  // Nullable as well as optional: the column is stored as nullable jsonb, so a statement
+  // read back from the database carries `null` rather than `undefined`.
+  conditions: z.record(z.unknown()).nullable().optional(),
 });
 export type PolicyStatement = z.infer<typeof PolicyStatementSchema>;
 
@@ -134,6 +140,75 @@ export const UserListQuerySchema = PaginationQuerySchema.extend({
   identityType: IdentityTypeEnum.optional(),
 });
 export type UserListQuery = z.infer<typeof UserListQuerySchema>;
+
+// ---------------------------------------------------------------------------
+// RESPONSE SCHEMAS
+//
+// These describe what the API actually sends back, as opposed to the schemas above
+// which describe request payloads and canonical domain shapes. They accept the `Date`
+// objects Drizzle returns and emit ISO strings.
+//
+// Every IAM route declares one of these. Using `z.any()` instead would switch off
+// Fastify's response serialization, which is what previously allowed a raw `users` row
+// — `passwordHash` included — to reach the client.
+// ---------------------------------------------------------------------------
+
+const auditTimestamps = {
+  createdAt: IsoDateTimeOutSchema,
+  updatedAt: IsoDateTimeOutSchema,
+};
+
+export const RoleResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  isSystem: z.boolean().optional(),
+  ...auditTimestamps,
+});
+
+export const GroupResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  isSystem: z.boolean().optional(),
+  memberCount: z.number().int().optional(),
+  ...auditTimestamps,
+});
+
+export const PolicyResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  isSystem: z.boolean().optional(),
+  statements: z.array(PolicyStatementSchema).optional(),
+  ...auditTimestamps,
+});
+
+/** A user as returned by the API. Deliberately has no `passwordHash` field. */
+export const UserResponseSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  status: UserStatusEnum,
+  identityType: IdentityTypeEnum,
+  lastLoginAt: NullableIsoDateTimeOutSchema.optional(),
+  ...auditTimestamps,
+});
+
+export const UserDetailResponseSchema = UserResponseSchema.extend({
+  roles: z.array(RoleResponseSchema).optional(),
+  groups: z.array(GroupResponseSchema).optional(),
+  directPolicies: z.array(PolicyResponseSchema).optional(),
+});
+
+export const RoleDetailResponseSchema = RoleResponseSchema.extend({
+  policies: z.array(PolicyResponseSchema).optional(),
+});
+
+export const GroupDetailResponseSchema = GroupResponseSchema.extend({
+  policies: z.array(PolicyResponseSchema).optional(),
+  members: z.array(UserResponseSchema).optional(),
+});
 
 // Effective permissions response
 export const EffectivePermissionsResponseSchema = z.object({

@@ -1,8 +1,6 @@
 import React from 'react';
 import { SystemStatus } from '@/components/system-status';
 import { ArchitectureOverview } from '@/components/architecture-overview';
-import { Badge } from '@/components/ui/badge';
-import { Server, ShieldCheck, Zap, Database } from 'lucide-react';
 
 export default function HomePage() {
   return (

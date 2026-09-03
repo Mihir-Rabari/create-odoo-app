@@ -6,7 +6,8 @@ import { api } from '@/lib/api-client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Mail, KeyRound, CheckCircle2, AlertCircle, Shield } from 'lucide-react';
+import { User, Mail, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, refreshSession } = useAuth();
@@ -59,8 +60,8 @@ export default function ProfilePage() {
       await api.profile.update({ name, email });
       await refreshSession();
       setProfileSuccess('Profile details updated successfully');
-    } catch (err: any) {
-      setProfileError(err.message || 'Failed to update profile');
+    } catch (err: unknown) {
+      setProfileError(getErrorMessage(err, 'Failed to update profile'));
     } finally {
       setProfileLoading(false);
     }
@@ -83,8 +84,8 @@ export default function ProfilePage() {
       setPasswordSuccess('Password changed successfully');
       setCurrentPassword('');
       setNewPassword('');
-    } catch (err: any) {
-      setPasswordError(err.message || 'Failed to change password');
+    } catch (err: unknown) {
+      setPasswordError(getErrorMessage(err, 'Failed to change password'));
     } finally {
       setPasswordLoading(false);
     }

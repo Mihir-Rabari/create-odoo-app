@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   useIamUser,
@@ -15,15 +15,12 @@ import {
   useAddUserToGroup,
   useRemoveUserFromGroup,
   useAttachDirectPolicy,
-  useDetachDirectPolicy,
-} from '@/hooks/use-iam';
+  useDetachDirectPolicy } from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Users,
   ChevronLeft,
-  Key,
   ShieldCheck,
   FolderTree,
   FileCode2,
@@ -32,13 +29,11 @@ import {
   Ban,
   Plus,
   Trash2,
-  Sparkles,
-} from 'lucide-react';
+  Sparkles } from 'lucide-react';
 import type { UserStatus } from '@packages/validation';
 
 export default function UserInspectorPage() {
   const params = useParams();
-  const router = useRouter();
   const userId = params.id as string;
 
   const { data: user, isLoading: userLoading, refetch: refetchUser } = useIamUser(userId);

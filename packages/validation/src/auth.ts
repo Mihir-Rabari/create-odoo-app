@@ -7,13 +7,30 @@ export type UserStatus = z.infer<typeof UserStatusEnum>;
 export const IdentityTypeEnum = z.enum(['ROOT', 'EXTERNAL_USER']);
 export type IdentityType = z.infer<typeof IdentityTypeEnum>;
 
-export const SignupRequestSchema = z.object({
-  email: EmailSchema,
-  password: z.string().min(8, 'Password must be at least 8 characters long'),
-  name: NonEmptyStringSchema,
-  // If a client attempts to pass role, strip it or ignore
-  role: z.string().optional(),
-});
+/**
+ * Builds the signup body schema for a given minimum password length.
+ *
+ * The length is a factory parameter rather than a literal so `AuthConfig.minPasswordLength`
+ * is actually enforced instead of being a knob that silently does nothing.
+ *
+ * `.strict()` rejects unknown keys outright. Previous versions accepted (and then ignored)
+ * a `role` field; rejecting it is clearer than silently discarding it, and it means a
+ * client attempting to set `identityType` gets a 400 rather than a false sense that the
+ * field was honoured.
+ */
+export function createSignupRequestSchema(minPasswordLength = 8) {
+  return z
+    .object({
+      email: EmailSchema,
+      password: z
+        .string()
+        .min(minPasswordLength, `Password must be at least ${minPasswordLength} characters long`),
+      name: NonEmptyStringSchema,
+    })
+    .strict();
+}
+
+export const SignupRequestSchema = createSignupRequestSchema();
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
 
 export const LoginRequestSchema = z.object({
@@ -54,8 +71,14 @@ export const UpdateProfileSchema = z.object({
 });
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 
-export const ChangePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
+export function createChangePasswordSchema(minPasswordLength = 8) {
+  return z.object({
+    currentPassword: z.string().min(1),
+    newPassword: z
+      .string()
+      .min(minPasswordLength, `New password must be at least ${minPasswordLength} characters`),
+  });
+}
+
+export const ChangePasswordSchema = createChangePasswordSchema();
 export type ChangePassword = z.infer<typeof ChangePasswordSchema>;

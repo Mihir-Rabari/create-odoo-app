@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"@packages/validation: lint ok\"",
+    "lint": "eslint src --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {

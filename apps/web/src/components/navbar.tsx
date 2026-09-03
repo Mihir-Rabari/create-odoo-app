@@ -6,16 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import {
-  Layers,
   BookOpen,
-  Activity,
   User,
   ShieldCheck,
   LogOut,
   LogIn,
   LayoutDashboard,
-  UserPlus,
-} from 'lucide-react';
+  UserPlus } from 'lucide-react';
 
 export function Navbar() {
   const { user, isAuthenticated, isLoading, isRoot, hasPermission, logout } = useAuth();

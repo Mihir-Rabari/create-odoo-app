@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useIamPermissions } from '@/hooks/use-iam';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Key, Shield } from 'lucide-react';
 import type { Permission } from '@packages/validation';

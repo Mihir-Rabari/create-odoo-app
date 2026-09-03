@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
-import { getEnv, type Env, AppConfig, type AppConfigType } from '@packages/config';
+import { AppConfig, type AppConfigType } from '@packages/config';
+import { getEnv, type Env } from '@packages/config/env';
 
 declare module 'fastify' {
   interface FastifyInstance {

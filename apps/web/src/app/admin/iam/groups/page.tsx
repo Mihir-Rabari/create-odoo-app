@@ -5,12 +5,12 @@ import {
   useIamGroups,
   useIamPolicies,
   useCreateGroup,
-  useDeleteGroup,
-} from '@/hooks/use-iam';
+  useDeleteGroup } from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FolderTree, Plus, Trash2, Users, AlertCircle } from 'lucide-react';
+import { FolderTree, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function GroupsManagementPage() {
   const { data: groups, isLoading, refetch } = useIamGroups();
@@ -32,15 +32,14 @@ export default function GroupsManagementPage() {
       await createGroupMutation.mutateAsync({
         name,
         description: description || undefined,
-        policyIds: selectedPolicies,
-      });
+        policyIds: selectedPolicies });
       setName('');
       setDescription('');
       setSelectedPolicies([]);
       setShowCreate(false);
       refetch();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create group');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create group'));
     }
   };
 

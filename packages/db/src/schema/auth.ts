@@ -1,6 +1,17 @@
 import { pgTable, varchar, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
 
 /**
+ * Column-level unions for the `users` status and identity columns.
+ *
+ * These are stored as varchar rather than a Postgres enum so that adding a value does
+ * not require a migration, but they are still a closed set at the type level. Declaring
+ * them with `$type` means a query result flows into the API response schemas without a
+ * cast, and a typo in a comparison is a compile error rather than a silent mismatch.
+ */
+export type UserStatusColumn = 'ACTIVE' | 'SUSPENDED' | 'DISABLED';
+export type IdentityTypeColumn = 'ROOT' | 'EXTERNAL_USER';
+
+/**
  * Users table storing primary identity records.
  * Supports ROOT (system bootstrap identity) and EXTERNAL_USER identities.
  */
@@ -11,8 +22,14 @@ export const users = pgTable(
     email: varchar('email', { length: 255 }).notNull().unique(),
     name: varchar('name', { length: 255 }).notNull(),
     passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-    status: varchar('status', { length: 32 }).notNull().default('ACTIVE'), // ACTIVE, SUSPENDED, DISABLED
-    identityType: varchar('identity_type', { length: 32 }).notNull().default('EXTERNAL_USER'), // ROOT, EXTERNAL_USER
+    status: varchar('status', { length: 32 })
+      .$type<UserStatusColumn>()
+      .notNull()
+      .default('ACTIVE'),
+    identityType: varchar('identity_type', { length: 32 })
+      .$type<IdentityTypeColumn>()
+      .notNull()
+      .default('EXTERNAL_USER'),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

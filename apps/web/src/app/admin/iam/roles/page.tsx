@@ -5,12 +5,12 @@ import {
   useIamRoles,
   useIamPolicies,
   useCreateRole,
-  useDeleteRole,
-} from '@/hooks/use-iam';
+  useDeleteRole } from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, Plus, Trash2, FileCode2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function RolesManagementPage() {
   const { data: roles, isLoading, refetch } = useIamRoles();
@@ -32,15 +32,14 @@ export default function RolesManagementPage() {
       await createRoleMutation.mutateAsync({
         name,
         description: description || undefined,
-        policyIds: selectedPolicies,
-      });
+        policyIds: selectedPolicies });
       setName('');
       setDescription('');
       setSelectedPolicies([]);
       setShowCreate(false);
       refetch();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create role');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create role'));
     }
   };
 

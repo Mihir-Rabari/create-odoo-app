@@ -40,9 +40,22 @@ npx create-odoo-app@latest . [options]
 | :--- | :--- |
 | `--skip-install` | Skip automatic dependency installation with `pnpm` |
 | `--skip-git` | Skip initializing a new Git repository |
-| `--skip-infra` | Skip starting Docker infrastructure during setup |
 | `-h, --help` | Display CLI help message |
 | `-v, --version` | Display generator package version |
+
+The target directory must be empty (a lone `.git` directory is fine). Scaffolding never
+overwrites existing files, including when generating into `.`.
+
+### Generated Secrets
+
+Each scaffolded project gets its own `SESSION_SECRET` and `INITIAL_ROOT_PASSWORD`,
+written to `.env` and printed once at the end of the run. Save the root password — it is
+hashed at seed time and cannot be recovered afterwards.
+
+The infrastructure credentials in `.env` (`DATABASE_PASSWORD`, `S3_ACCESS_KEY`,
+`S3_SECRET_KEY`, `REDIS_PASSWORD`) are still local development defaults. The API refuses
+to start with `NODE_ENV=production` while any of them remain, and reports exactly which
+ones to change.
 
 ---
 
@@ -85,7 +98,7 @@ my-awesome-app/
 The generated project exposes a configuration layer in `packages/config/src/`:
 
 * **`app-config.ts`**: Application constants, metadata, pagination limits.
-* **`auth-config.ts`**: Authentication behavior (`registrationEnabled`, `sessionTtlSeconds`, `cookieName`, `minPasswordLength`).
+* **`auth-config.ts`**: Authentication behavior (`registrationEnabled`, `sessionTtlSeconds`, `cookieName`, `minPasswordLength`, `maxLoginAttempts`, `lockoutSeconds`, `loginAttemptWindowSeconds`). Every value here is enforced at runtime — `registrationEnabled: false` genuinely closes `/auth/signup`, and `maxLoginAttempts` drives a real per-email lockout.
 * **`iam-config.ts`**: Declarative domain roles, groups, default policies, and baseline role-policy assignments so developers do not need to edit raw database records or authorization engine internals.
 * **`feature-config.ts`**: Optional infrastructure feature toggles (`enableSwagger`, `enableMetrics`, `enableStorage`, `enableRedis`, `enableEmail`).
 
@@ -151,6 +164,7 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 | `pnpm test:smoke` | Run generator smoke test in a temporary directory |
 | `pnpm test:dogfood` | Execute full unpacked generator dogfooding test |
 | `pnpm audit:security`| Scan workspace and git history for credentials and machine paths |
+| `pnpm audit:deps` | Fail on any known vulnerability in production dependencies |
 | `pnpm deps:check` | Audit direct external dependencies inventory |
 | `pnpm skills:check` | Validate Agent Skills registry, frontmatter, and links |
 | `pnpm skills:lint` | Run structural linter across all skill files |
@@ -159,7 +173,7 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 | `pnpm verify:release` | Execute pre-release packaging, package audit, and unpacked generator test |
 | `pnpm release:check` | Canonical pre-release verification checklist command |
 | `pnpm typecheck` | Run strict TypeScript verification across all packages + CLI |
-| `pnpm lint` | Run code quality linters across all packages |
+| `pnpm lint` | Run ESLint across all packages (zero warnings tolerated) |
 | `pnpm setup` | Cross-platform idempotent setup and database seeding |
 | `pnpm db:migrate` | Apply pending Drizzle PostgreSQL migrations |
 | `pnpm db:seed` | Seed database (bootstraps ROOT admin and baseline IAM) |
@@ -174,7 +188,7 @@ pnpm skills:export    # Export standalone clean skill directories in dist/skills
 ## 8. Release Engineering, CI/CD & Publishing
 
 ### Automated CI/CD Pipeline
-- **Continuous Integration (`.github/workflows/ci.yml`)**: Runs on pull requests and pushes to `main`. Tests on Ubuntu and Windows across Node.js 22.x with dependency caching and full quality gates (`pnpm verify`).
+- **Continuous Integration (`.github/workflows/ci.yml`)**: Runs on pull requests and pushes to `main`. Tests on Ubuntu and Windows across Node.js 22.x with full quality gates: dependency vulnerability audit, ESLint, strict typecheck, tests with coverage thresholds, generator smoke test, and a production build. A separate Linux job runs migrations and the seed script against real PostgreSQL and Redis service containers.
 - **Release Automation (`.github/workflows/release.yml`)**: Automatically triggers on Git tags (`v*.*.*`) or manual trigger. Builds, audits package contents for leaks, publishes to npm with `--access public --provenance`, and generates a GitHub Release.
 
 ### Semantic Versioning Policy

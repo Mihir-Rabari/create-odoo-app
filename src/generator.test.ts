@@ -134,5 +134,126 @@ describe('Generator Unit Tests', () => {
       expect(fs.existsSync(path.join(testAppDir, 'implementation_plan.md'))).toBe(false);
       expect(fs.existsSync(path.join(testAppDir, 'walkthrough.md'))).toBe(false);
     });
+
+    it('mints per-project secrets instead of copying the published placeholders', async () => {
+      // Every generated project previously shipped the same SESSION_SECRET and root
+      // password, both of which are public in .env.example on npm and GitHub.
+      //
+      // The placeholders are read out of the generated .env.example rather than
+      // hard-coded here, so this stays correct if they are ever changed — and so the
+      // literals live in exactly one place in the repository.
+      const envContents = await fs.promises.readFile(path.join(testAppDir, '.env'), 'utf-8');
+      const exampleContents = await fs.promises.readFile(
+        path.join(testAppDir, '.env.example'),
+        'utf-8'
+      );
+
+      for (const key of ['SESSION_SECRET', 'INITIAL_ROOT_PASSWORD']) {
+        const placeholder = new RegExp(`^${key}=(.+)$`, 'm').exec(exampleContents)?.[1];
+        expect(placeholder, `${key} missing from .env.example`).toBeTruthy();
+        expect(envContents).not.toContain(placeholder!);
+      }
+
+      const sessionSecret = /^SESSION_SECRET=(.+)$/m.exec(envContents)?.[1] ?? '';
+      expect(sessionSecret.length).toBeGreaterThanOrEqual(32);
+
+      const rootPassword = /^INITIAL_ROOT_PASSWORD=(.+)$/m.exec(envContents)?.[1] ?? '';
+      expect(rootPassword.length).toBeGreaterThanOrEqual(12);
+    });
+
+    it('generates a different secret for each project', async () => {
+      const otherDir = path.join(os.tmpdir(), `create-odoo-app-secrets-${Date.now()}`);
+      try {
+        const other = await generateProject({
+          projectName: 'beta-portal',
+          targetDir: otherDir,
+          templateDir: path.resolve(__dirname, '..'),
+          skipInstall: true,
+          skipGit: true,
+        });
+
+        expect(other.generatedSecrets?.SESSION_SECRET).toBeDefined();
+        expect(other.generatedSecrets?.SESSION_SECRET).not.toBe(
+          /^SESSION_SECRET=(.+)$/m.exec(
+            await fs.promises.readFile(path.join(testAppDir, '.env'), 'utf-8')
+          )?.[1]
+        );
+      } finally {
+        await fs.promises.rm(otherDir, { recursive: true, force: true });
+      }
+    });
+
+    it('strips the generator’s own identity from the generated package.json', async () => {
+      // Left in place, every scaffolded app points its issue tracker and authorship at
+      // the create-odoo-app repository.
+      const generatedPkg = JSON.parse(
+        await fs.promises.readFile(path.join(testAppDir, 'package.json'), 'utf-8')
+      );
+
+      expect(generatedPkg.repository).toBeUndefined();
+      expect(generatedPkg.bugs).toBeUndefined();
+      expect(generatedPkg.homepage).toBeUndefined();
+      expect(generatedPkg.author).toBeUndefined();
+      expect(generatedPkg.files).toBeUndefined();
+      expect(generatedPkg.private).toBe(true);
+      expect(generatedPkg.version).toBe('0.1.0');
+    });
+
+    it('does not inherit ignore-scripts in the generated .npmrc', async () => {
+      // Inheriting it would permanently suppress install scripts for the user's own
+      // future dependencies.
+      const npmrcPath = path.join(testAppDir, '.npmrc');
+      if (fs.existsSync(npmrcPath)) {
+        const npmrc = await fs.promises.readFile(npmrcPath, 'utf-8');
+        expect(npmrc).not.toMatch(/^s*ignore-scriptss*=s*true/m);
+      }
+    });
+  });
+});
+
+describe('Target directory safety', () => {
+  it('refuses to scaffold into a directory that already has files', async () => {
+    const dir = path.join(os.tmpdir(), `create-odoo-app-occupied-${Date.now()}`);
+    await fs.promises.mkdir(dir, { recursive: true });
+    await fs.promises.writeFile(path.join(dir, 'important-work.txt'), 'do not clobber');
+
+    try {
+      const result = await generateProject({
+        projectName: 'occupied-app',
+        targetDir: dir,
+        templateDir: path.resolve(__dirname, '..'),
+        skipInstall: true,
+        skipGit: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/not empty/i);
+
+      // The pre-existing file must be untouched.
+      expect(await fs.promises.readFile(path.join(dir, 'important-work.txt'), 'utf-8')).toBe(
+        'do not clobber'
+      );
+    } finally {
+      await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('allows scaffolding into a directory containing only .git', async () => {
+    const dir = path.join(os.tmpdir(), `create-odoo-app-gitonly-${Date.now()}`);
+    await fs.promises.mkdir(path.join(dir, '.git'), { recursive: true });
+
+    try {
+      const result = await generateProject({
+        projectName: 'git-initialised',
+        targetDir: dir,
+        templateDir: path.resolve(__dirname, '..'),
+        skipInstall: true,
+        skipGit: true,
+      });
+
+      expect(result.success).toBe(true);
+    } finally {
+      await fs.promises.rm(dir, { recursive: true, force: true });
+    }
   });
 });

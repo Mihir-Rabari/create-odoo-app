@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useIamUsers, useUpdateUserStatus } from '@/hooks/use-iam';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,12 +11,10 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Shield,
   Eye,
   Ban,
   CheckCircle2,
-  AlertTriangle,
-} from 'lucide-react';
+  AlertTriangle } from 'lucide-react';
 import type { UserStatus } from '@packages/validation';
 
 export default function UsersManagementPage() {
@@ -28,8 +26,7 @@ export default function UsersManagementPage() {
     page,
     limit: 10,
     search: search || undefined,
-    status: (statusFilter as UserStatus) || undefined,
-  });
+    status: (statusFilter as UserStatus) || undefined });
 
   const updateStatusMutation = useUpdateUserStatus();
 

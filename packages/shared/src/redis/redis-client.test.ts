@@ -1,11 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createRedisClient } from './redis-client.js';
 
 describe('Redis Client Abstraction (@packages/shared)', () => {
   it('should initialize RedisService without throwing', () => {
     const redis = createRedisClient({
-      url: 'redis://localhost:6379',
-    });
+      url: 'redis://localhost:6379' });
 
     expect(redis).toBeDefined();
     expect(typeof redis.connect).toBe('function');
@@ -21,8 +20,7 @@ describe('Redis Client Abstraction (@packages/shared)', () => {
     const redis = createRedisClient({
       host: '127.0.0.1',
       port: 59999, // Unreachable port
-      connectTimeout: 200,
-    });
+      connectTimeout: 200 });
 
     const result = await redis.healthCheck();
     expect(result.status).toBe('error');

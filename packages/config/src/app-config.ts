@@ -40,6 +40,9 @@ export const AppConfig = {
     sessionTtlSeconds: AuthConfig.sessionTtlSeconds,
     cookieName: AuthConfig.cookieName,
     minPasswordLength: AuthConfig.minPasswordLength,
+    maxLoginAttempts: AuthConfig.maxLoginAttempts,
+    lockoutSeconds: AuthConfig.lockoutSeconds,
+    loginAttemptWindowSeconds: AuthConfig.loginAttemptWindowSeconds,
   },
 
   // IAM Configuration (Phase 2)

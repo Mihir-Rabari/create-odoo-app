@@ -25,8 +25,31 @@ import type {
   UserListQuery,
   EffectivePermissionsResponse,
 } from '@packages/validation';
-import { PolicyEngine, type IdentitySubject } from '../policy/policy-engine.js';
+import { PolicyEngine, findUnheldActions, type IdentitySubject } from '../policy/policy-engine.js';
 import { permissionCatalog } from '../catalog/permission-catalog.js';
+import {
+  SystemRecordProtectedError,
+  PrivilegeEscalationError,
+  RootProtectedError,
+} from '../errors.js';
+
+/**
+ * Explicit column projection for the `users` table.
+ *
+ * Never select `users.*` (or use an unprojected `.returning()`) for anything that can
+ * reach an HTTP response: the row carries `passwordHash`. Every read and write that
+ * surfaces a user must go through this projection.
+ */
+export const SAFE_USER_COLUMNS = {
+  id: users.id,
+  email: users.email,
+  name: users.name,
+  status: users.status,
+  identityType: users.identityType,
+  lastLoginAt: users.lastLoginAt,
+  createdAt: users.createdAt,
+  updatedAt: users.updatedAt,
+} as const;
 
 export class IamService {
   constructor(private db: DatabaseInstance) {}
@@ -53,6 +76,134 @@ export class IamService {
       });
     } catch {
       // Do not let audit log failures crash main operation
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // GUARD RAILS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Blocks mutation of a seeded, platform-owned record.
+   *
+   * The `isSystem` flag is set by the seed script on the baseline roles, groups and
+   * policies the application depends on. They are readable and attachable, but not
+   * editable or deletable through the API.
+   */
+  private async assertNotSystemRecord(
+    table: typeof roles | typeof groups | typeof policies,
+    kind: 'role' | 'group' | 'policy',
+    id: string
+  ): Promise<void> {
+    const [record] = await this.db
+      .select({ isSystem: table.isSystem, name: table.name })
+      .from(table)
+      .where(eq(table.id, id))
+      .limit(1);
+
+    if (record?.isSystem) {
+      throw new SystemRecordProtectedError(kind, record.name);
+    }
+  }
+
+  /**
+   * Blocks an actor from granting permissions they do not hold themselves.
+   *
+   * Permission to administer policies is not permission to award arbitrary authority.
+   * Without this check, any holder of `policies:update` or `roles:update` could attach
+   * an `allow *` statement to their own account and escalate to ROOT-equivalent access.
+   *
+   * ROOT identities bypass the check: they already hold everything.
+   */
+  public async assertCanGrantPolicy(policyId: string, actorId: string): Promise<void> {
+    // `system` is the seed/migration actor, which runs before any HTTP request exists.
+    if (actorId === 'system') {
+      return;
+    }
+
+    const [actor] = await this.db
+      .select(SAFE_USER_COLUMNS)
+      .from(users)
+      .where(eq(users.id, actorId))
+      .limit(1);
+
+    if (!actor) {
+      throw new PrivilegeEscalationError(['<unknown actor>']);
+    }
+
+    if (actor.identityType === 'ROOT') {
+      return;
+    }
+
+    const grantedActions = await this.getPolicyActions(policyId);
+    const actorStatements = await this.getUserStatements(actorId);
+
+    const actorSubject: IdentitySubject = {
+      id: actor.id,
+      email: actor.email,
+      name: actor.name,
+      identityType: actor.identityType as IdentityType,
+      status: actor.status as UserStatus,
+    };
+
+    const notHeld = findUnheldActions(
+      actorSubject,
+      actorStatements,
+      grantedActions,
+      permissionCatalog.getAllPermissions().map((p) => p.id)
+    );
+
+    if (notHeld.length > 0) {
+      throw new PrivilegeEscalationError(notHeld);
+    }
+  }
+
+  /**
+   * Returns the distinct action patterns a policy would confer via its allow statements.
+   */
+  public async getPolicyActions(policyId: string): Promise<string[]> {
+    const statements = await this.db
+      .select({ effect: policyStatements.effect, actions: policyStatements.actions })
+      .from(policyStatements)
+      .where(eq(policyStatements.policyId, policyId));
+
+    const actions = new Set<string>();
+    for (const statement of statements) {
+      if (statement.effect !== 'allow') continue;
+      for (const action of (statement.actions as string[]) ?? []) {
+        actions.add(action);
+      }
+    }
+
+    return [...actions];
+  }
+
+  /**
+   * Protects the ROOT identity and guards against an actor locking themselves out.
+   */
+  private async assertStatusChangeAllowed(
+    targetUserId: string,
+    status: UserStatus,
+    actorId: string
+  ): Promise<void> {
+    if (status === 'ACTIVE') {
+      return;
+    }
+
+    if (targetUserId === actorId) {
+      throw new RootProtectedError('You cannot suspend or disable your own account.');
+    }
+
+    const [target] = await this.db
+      .select({ identityType: users.identityType })
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .limit(1);
+
+    if (target?.identityType === 'ROOT') {
+      throw new RootProtectedError(
+        'The ROOT identity cannot be suspended or disabled; doing so would lock the platform.'
+      );
     }
   }
 
@@ -89,16 +240,7 @@ export class IamService {
     const totalPages = Math.ceil(totalItems / limit);
 
     const userRows = await this.db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        status: users.status,
-        identityType: users.identityType,
-        lastLoginAt: users.lastLoginAt,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
+      .select(SAFE_USER_COLUMNS)
       .from(users)
       .where(whereClause)
       .limit(limit)
@@ -120,16 +262,7 @@ export class IamService {
 
   public async getUserById(userId: string) {
     const [user] = await this.db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        status: users.status,
-        identityType: users.identityType,
-        lastLoginAt: users.lastLoginAt,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
+      .select(SAFE_USER_COLUMNS)
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
@@ -150,11 +283,13 @@ export class IamService {
   }
 
   public async updateUserStatus(userId: string, status: UserStatus, actor = 'system') {
+    await this.assertStatusChangeAllowed(userId, status, actor);
+
     const [updated] = await this.db
       .update(users)
       .set({ status, updatedAt: new Date() })
       .where(eq(users.id, userId))
-      .returning();
+      .returning(SAFE_USER_COLUMNS);
 
     if (updated) {
       await this.logAuditEvent({
@@ -274,6 +409,8 @@ export class IamService {
   }
 
   public async attachPolicyToUser(userId: string, policyId: string, actor = 'system') {
+    await this.assertCanGrantPolicy(policyId, actor);
+
     await this.db
       .insert(userPolicies)
       .values({ userId, policyId })
@@ -387,7 +524,10 @@ export class IamService {
     const statements = await this.getUserStatements(userId);
 
     // Collect all policies
-    const allPoliciesMap = new Map<string, any>();
+    // Deduplicated by policy id: the same policy can arrive via a direct attachment,
+    // a role and a group, and should appear once in the response.
+    type AttachedPolicy = Awaited<ReturnType<IamService['getUserDirectPolicies']>>[number];
+    const allPoliciesMap = new Map<string, AttachedPolicy>();
     for (const p of directPols) allPoliciesMap.set(p.id, p);
 
     for (const r of userRoleList) {
@@ -487,6 +627,8 @@ export class IamService {
   }
 
   public async updateRole(roleId: string, data: UpdateRole, actor = 'system') {
+    await this.assertNotSystemRecord(roles, 'role', roleId);
+
     const [updated] = await this.db
       .update(roles)
       .set({
@@ -516,6 +658,8 @@ export class IamService {
   }
 
   public async deleteRole(roleId: string, actor = 'system') {
+    await this.assertNotSystemRecord(roles, 'role', roleId);
+
     const [deleted] = await this.db.delete(roles).where(eq(roles.id, roleId)).returning();
     if (deleted) {
       await this.logAuditEvent({
@@ -546,6 +690,8 @@ export class IamService {
   }
 
   public async attachPolicyToRole(roleId: string, policyId: string, actor = 'system') {
+    await this.assertCanGrantPolicy(policyId, actor);
+
     await this.db.insert(rolePolicies).values({ roleId, policyId }).onConflictDoNothing();
     await this.logAuditEvent({
       action: 'POLICY_ATTACHED_TO_ROLE',
@@ -618,6 +764,8 @@ export class IamService {
   }
 
   public async updateGroup(groupId: string, data: UpdateGroup, actor = 'system') {
+    await this.assertNotSystemRecord(groups, 'group', groupId);
+
     const [updated] = await this.db
       .update(groups)
       .set({
@@ -646,6 +794,8 @@ export class IamService {
   }
 
   public async deleteGroup(groupId: string, actor = 'system') {
+    await this.assertNotSystemRecord(groups, 'group', groupId);
+
     const [deleted] = await this.db.delete(groups).where(eq(groups.id, groupId)).returning();
     if (deleted) {
       await this.logAuditEvent({
@@ -676,6 +826,8 @@ export class IamService {
   }
 
   public async attachPolicyToGroup(groupId: string, policyId: string, actor = 'system') {
+    await this.assertCanGrantPolicy(policyId, actor);
+
     await this.db.insert(groupPolicies).values({ groupId, policyId }).onConflictDoNothing();
     await this.logAuditEvent({
       action: 'POLICY_ATTACHED_TO_GROUP',
@@ -761,6 +913,8 @@ export class IamService {
   }
 
   public async updatePolicy(policyId: string, data: UpdatePolicy, actor = 'system') {
+    await this.assertNotSystemRecord(policies, 'policy', policyId);
+
     const [updated] = await this.db
       .update(policies)
       .set({
@@ -795,6 +949,8 @@ export class IamService {
   }
 
   public async deletePolicy(policyId: string, actor = 'system') {
+    await this.assertNotSystemRecord(policies, 'policy', policyId);
+
     const [deleted] = await this.db.delete(policies).where(eq(policies.id, policyId)).returning();
     if (deleted) {
       await this.logAuditEvent({

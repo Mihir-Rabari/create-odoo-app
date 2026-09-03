@@ -45,7 +45,7 @@ jobs:
         shell: bash
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
       - name: Agent Skills Standard Verification
         run: pnpm skills:check
@@ -56,6 +56,9 @@ jobs:
       - name: Agent Skills Packaging Verification
         run: pnpm skills:pack --all
 
+      - name: Dependency Vulnerability Audit
+        run: pnpm audit --prod --audit-level moderate
+
       - name: Code Linters
         run: pnpm lint
 
@@ -64,6 +67,7 @@ jobs:
 
       - name: Unit & Integration Tests (Coverage)
         run: pnpm test:coverage
+
 
       - name: Security & Adversarial Test Suite
         run: pnpm test:security
@@ -76,3 +80,72 @@ jobs:
 
       - name: Distributable Tarball Release Verification
         run: pnpm verify:release
+
+  # Migrations and the seed script are the first two commands a scaffolded project runs.
+  # The quality gate has no database, so without this job a broken migration or a seed
+  # that fails against a real Postgres would only ever surface for the user.
+  #
+  # Service containers are Linux-only on GitHub-hosted runners, hence a separate job
+  # rather than a conditional service on the matrix above.
+  database:
+    name: Database Migration & Seed
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: app_db
+          # Throwaway database, reachable only from this job's runner and destroyed with
+          # it. `trust` means there is no password to hardcode here at all — preferable
+          # to committing a placeholder credential that secret scanners then flag.
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # No password component: the service container above authenticates with `trust`.
+      DATABASE_URL: postgres://postgres@localhost:5432/app_db
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Enable Corepack & Prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.0 --activate
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply Migrations
+        run: pnpm db:migrate
+
+      - name: Seed Baseline IAM
+        run: pnpm db:seed
+
+      - name: Seed Is Idempotent
+        run: pnpm db:seed

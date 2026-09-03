@@ -1,5 +1,5 @@
 import { buildApp } from './app.js';
-import { getEnv } from '@packages/config';
+import { getEnv } from '@packages/config/env';
 
 async function start() {
   const env = getEnv();

@@ -1,24 +1,57 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import {
-  SignupRequestSchema,
+  createSignupRequestSchema,
   LoginRequestSchema,
   SessionResponseSchema,
   HttpErrorResponseSchema,
 } from '@packages/validation';
 import { users, policies, userPolicies } from '@packages/db';
 import { eq } from 'drizzle-orm';
-import { hashPassword, verifyPassword, getSessionCookieOptions } from '@packages/auth';
+import {
+  hashPassword,
+  verifyPassword,
+  verifyPasswordDummy,
+  getSessionCookieOptions,
+  LoginThrottle,
+} from '@packages/auth';
 import { requireAuthentication } from '@packages/iam';
 import { z } from 'zod';
 
+/**
+ * True when the browser will treat the web app and the API as different sites, which
+ * is what determines whether the session cookie needs `SameSite=None`.
+ *
+ * Derived from configuration rather than exposed as another env var: if WEB_URL and
+ * API_URL are on different hosts, the cookie is cross-site by definition.
+ */
+function isCrossSiteDeployment(webUrl: string, apiUrl: string): boolean {
+  try {
+    return new URL(webUrl).hostname !== new URL(apiUrl).hostname;
+  } catch {
+    return false;
+  }
+}
+
 export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
   const env = fastify.env;
+  const authConfig = fastify.appConfig.auth;
   const isProd = env.NODE_ENV === 'production';
   const cookieOptions = getSessionCookieOptions(
     isProd,
     env.SESSION_TTL_SECONDS,
-    env.SESSION_COOKIE_NAME
+    env.SESSION_COOKIE_NAME,
+    isCrossSiteDeployment(env.WEB_URL, env.API_URL)
   );
+
+  const SignupRequestSchema = createSignupRequestSchema(authConfig.minPasswordLength);
+
+  // Counts failed logins per email, independently of the per-IP rate limiter, so that
+  // credential stuffing spread across many source addresses still hits a wall.
+  const loginThrottle = new LoginThrottle(fastify.redis, {
+    maxAttempts: authConfig.maxLoginAttempts,
+    lockoutSeconds: authConfig.lockoutSeconds,
+    windowSeconds: authConfig.loginAttemptWindowSeconds,
+  });
 
   // ---------------------------------------------------------------------------
   // POST /api/v1/auth/signup - Public Visitor Registration
@@ -33,12 +66,26 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         response: {
           201: SessionResponseSchema,
           400: HttpErrorResponseSchema,
+          403: HttpErrorResponseSchema,
           409: HttpErrorResponseSchema,
           500: HttpErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
+      // Honour the registrationEnabled switch. When public signup is turned off,
+      // accounts are created by administrators through the IAM endpoints instead.
+      if (!authConfig.registrationEnabled) {
+        return reply.status(403).send({
+          statusCode: 403,
+          error: 'Forbidden',
+          message: 'Public registration is disabled for this application.',
+          code: 'REGISTRATION_DISABLED',
+          requestId: request.id,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       const { email: rawEmail, password, name } = request.body;
       const email = rawEmail.toLowerCase().trim();
 
@@ -63,35 +110,53 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // 2. Hash password
       const passwordHash = await hashPassword(password);
 
-      // 3. Create EXTERNAL_USER (client cannot spoof role or identityType)
-      const [newUser] = await fastify.db
-        .insert(users)
-        .values({
-          email,
-          name: name.trim(),
-          passwordHash,
-          status: 'ACTIVE',
-          identityType: 'EXTERNAL_USER',
-        })
-        .returning();
-
-      // 4. Attach baseline ExternalUserPolicy to new user
+      // 3 & 4. Create the account and attach its baseline policy atomically.
+      //
+      // These were two independent statements. If the policy attachment failed, the
+      // user was left created but with no permissions at all — able to log in and do
+      // nothing, and unable to sign up again because the email was taken.
       const defaultPolicyName = fastify.appConfig.iam.defaultExternalUserPolicy;
-      const [externalPolicy] = await fastify.db
-        .select({ id: policies.id })
-        .from(policies)
-        .where(eq(policies.name, defaultPolicyName))
-        .limit(1);
 
-      if (externalPolicy) {
-        await fastify.db
-          .insert(userPolicies)
+      const newUser = await fastify.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(users)
           .values({
-            userId: newUser.id,
-            policyId: externalPolicy.id,
+            email,
+            name: name.trim(),
+            passwordHash,
+            status: 'ACTIVE',
+            // Identity type is fixed server-side; the request schema is `.strict()` so a
+            // client cannot even submit this field.
+            identityType: 'EXTERNAL_USER',
           })
-          .onConflictDoNothing();
-      }
+          .returning();
+
+        const [externalPolicy] = await tx
+          .select({ id: policies.id })
+          .from(policies)
+          .where(eq(policies.name, defaultPolicyName))
+          .limit(1);
+
+        if (externalPolicy) {
+          await tx
+            .insert(userPolicies)
+            .values({
+              userId: created.id,
+              policyId: externalPolicy.id,
+            })
+            .onConflictDoNothing();
+        } else {
+          // The seed installs this policy. Its absence means the database was never
+          // seeded, or the policy was deleted — worth a loud log, since every account
+          // created from here on will have no permissions.
+          request.log.error(
+            { policy: defaultPolicyName },
+            'Default external-user policy is missing; new accounts will have no permissions'
+          );
+        }
+
+        return created;
+      });
 
       // 5. Create server-side session
       const { sessionToken, session, user } = await fastify.sessionManager.createSession({
@@ -164,6 +229,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
+          429: HttpErrorResponseSchema,
           500: HttpErrorResponseSchema,
         },
       },
@@ -171,6 +237,27 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
     async (request, reply) => {
       const { email: rawEmail, password } = request.body;
       const email = rawEmail.toLowerCase().trim();
+
+      // 0. Reject while the account is locked out, before touching the database.
+      const lockout = await loginThrottle.check(email);
+      if (lockout.locked) {
+        await fastify.iamService.logAuditEvent({
+          action: 'LOGIN_BLOCKED',
+          actor: 'anonymous',
+          details: { email, reason: 'Account locked after repeated failures', ip: request.ip },
+          status: 'failure',
+        });
+
+        reply.header('Retry-After', String(lockout.retryAfterSeconds));
+        return reply.status(429).send({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: `Too many failed login attempts. Try again in ${Math.ceil(lockout.retryAfterSeconds / 60)} minute(s).`,
+          code: 'ACCOUNT_LOCKED',
+          requestId: request.id,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       // 1. Fetch user by email
       const [userRecord] = await fastify.db
@@ -180,6 +267,12 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         .limit(1);
 
       if (!userRecord) {
+        // Spend the same CPU time as a real password check. Returning early here would
+        // make "no such account" measurably faster than "wrong password", which is
+        // enough to enumerate registered emails.
+        await verifyPasswordDummy(password);
+        await loginThrottle.recordFailure(email);
+
         await fastify.iamService.logAuditEvent({
           action: 'LOGIN_FAILURE',
           actor: 'anonymous',
@@ -237,6 +330,11 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // 3. Verify password hash
       const isValidPassword = await verifyPassword(password, userRecord.passwordHash);
       if (!isValidPassword) {
+        const failure = await loginThrottle.recordFailure(email);
+        if (failure.locked) {
+          reply.header('Retry-After', String(failure.retryAfterSeconds));
+        }
+
         await fastify.iamService.logAuditEvent({
           action: 'LOGIN_FAILURE',
           actor: userRecord.id,
@@ -254,7 +352,9 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         });
       }
 
-      // 4. Create Session
+      // 4. Clear the failure counter, then create the session
+      await loginThrottle.recordSuccess(email);
+
       const { sessionToken, session, user } = await fastify.sessionManager.createSession({
         userId: userRecord.id,
         userAgent: request.headers['user-agent'],

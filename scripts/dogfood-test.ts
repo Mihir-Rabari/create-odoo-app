@@ -25,7 +25,14 @@ async function runDogfoodTest(): Promise<void> {
 
     // 2. Extract into isolated temp directory
     console.log(`[Dogfood] 📂 Step 2: Unpacking ${tarballName} into ${tempDir}...`);
-    execSync(`tar -xzf "${tarballPath}" -C "${tempDir}"`, { stdio: 'ignore' });
+    // Passed as a bare filename with cwd set to its directory. GNU tar (what ships with
+    // Git for Windows) reads an argument containing a colon as a remote `host:path`
+    // spec, so an absolute Windows path fails for any checkout not on C:. Only the
+    // archive argument is parsed that way, so -C can stay absolute.
+    execSync(`tar -xzf "${tarballName}" -C "${tempDir}"`, {
+      cwd: path.dirname(tarballPath),
+      stdio: 'ignore',
+    });
 
     const packageRoot = path.join(tempDir, 'package');
     const cliPath = path.join(packageRoot, 'dist', 'cli.js');

@@ -13,10 +13,8 @@ import {
   Clock,
   CheckCircle2,
   LogIn,
-  Layers,
   ArrowRight,
-  ShieldAlert,
-} from 'lucide-react';
+  ShieldAlert } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, session, effectivePermissions, isAuthenticated, isLoading, isRoot, hasPermission } =

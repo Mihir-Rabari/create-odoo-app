@@ -12,7 +12,14 @@ declare module 'fastify' {
 async function authPlugin(fastify: FastifyInstance) {
   const env = fastify.env;
 
-  // 1. Register cookie support
+  // 1. Register cookie support.
+  //
+  // SESSION_SECRET enables @fastify/cookie's signing support. The session cookie itself
+  // is not signed and does not need to be: its value is a 256-bit random token that is
+  // stored SHA-256-hashed server-side, so forging one means guessing the token, and a
+  // signature would add nothing. The secret is registered here so that any *other*
+  // cookie the application adds later can be signed with `{ signed: true }` without
+  // further setup.
   await fastify.register(cookie, {
     secret: env.SESSION_SECRET,
     hook: 'onRequest',

@@ -2,7 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   UpdateProfileSchema,
-  ChangePasswordSchema,
+  createChangePasswordSchema,
   HttpErrorResponseSchema,
   AuthUserSchema,
 } from '@packages/validation';
@@ -12,6 +12,12 @@ import { hashPassword, verifyPassword } from '@packages/auth';
 import { requirePermission } from '@packages/iam';
 
 export const profileRoutes: FastifyPluginAsyncZod = async (fastify) => {
+  // Built from config so AuthConfig.minPasswordLength governs password changes too,
+  // not just signup.
+  const ChangePasswordSchema = createChangePasswordSchema(
+    fastify.appConfig.auth.minPasswordLength
+  );
+
   // ---------------------------------------------------------------------------
   // GET /api/v1/profile - Get current user profile (profile:read:self)
   // ---------------------------------------------------------------------------

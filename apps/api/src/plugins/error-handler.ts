@@ -58,41 +58,47 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
       return reply.status(400).send(response);
     }
 
-    // 3. Handle HTTP status code errors (Sensible / custom error codes)
+    // 3. Handle HTTP status code errors (Sensible / domain errors / custom codes)
     const statusCode = typeof (error as FastifyError).statusCode === 'number' ? (error as FastifyError).statusCode! : 500;
 
-    let errorCode = 'INTERNAL_SERVER_ERROR';
-    let errorName = 'Internal Server Error';
-    let message = 'An unexpected server error occurred';
+    // Canonical name and fallback code per status. Any 4xx not listed here is still
+    // reported as a client error rather than falling through to the 5xx branch, which
+    // previously produced responses like "422 INTERNAL_SERVER_ERROR".
+    const STATUS_META: Record<number, { name: string; code: string; fallback: string }> = {
+      400: { name: 'Bad Request', code: 'BAD_REQUEST', fallback: 'Malformed request' },
+      401: { name: 'Unauthorized', code: 'UNAUTHORIZED', fallback: 'Authentication required' },
+      403: { name: 'Forbidden', code: 'FORBIDDEN', fallback: 'Access denied' },
+      404: { name: 'Not Found', code: 'NOT_FOUND', fallback: 'Requested resource not found' },
+      409: { name: 'Conflict', code: 'CONFLICT', fallback: 'Resource conflict' },
+      422: { name: 'Unprocessable Entity', code: 'UNPROCESSABLE_ENTITY', fallback: 'Request could not be processed' },
+      429: { name: 'Too Many Requests', code: 'RATE_LIMIT_EXCEEDED', fallback: 'Rate limit exceeded' },
+    };
 
-    if (statusCode === 400) {
-      errorCode = 'BAD_REQUEST';
-      errorName = 'Bad Request';
-      message = error.message;
-    } else if (statusCode === 401) {
-      errorCode = 'UNAUTHORIZED';
-      errorName = 'Unauthorized';
-      message = error.message || 'Authentication required';
-    } else if (statusCode === 403) {
-      errorCode = 'FORBIDDEN';
-      errorName = 'Forbidden';
-      message = error.message || 'Access denied';
-    } else if (statusCode === 404) {
-      errorCode = 'NOT_FOUND';
-      errorName = 'Not Found';
-      message = error.message || 'Requested resource not found';
-    } else if (statusCode === 409) {
-      errorCode = 'CONFLICT';
-      errorName = 'Conflict';
-      message = error.message || 'Resource conflict';
-    } else if (statusCode === 429) {
-      errorCode = 'RATE_LIMIT_EXCEEDED';
-      errorName = 'Too Many Requests';
-      message = error.message || 'Rate limit exceeded';
-    } else if (statusCode >= 500) {
-      // In development mode, provide error message; in production, keep generic
+    let errorCode: string;
+    let errorName: string;
+    let message: string;
+
+    if (statusCode >= 500) {
+      errorCode = 'INTERNAL_SERVER_ERROR';
+      errorName = 'Internal Server Error';
+      // Never surface internal error text outside development: messages routinely carry
+      // connection strings, file paths and driver internals.
       const isDev = fastify.env?.NODE_ENV === 'development';
       message = isDev ? error.message : 'An internal server error occurred';
+    } else {
+      const meta = STATUS_META[statusCode] ?? {
+        name: 'Request Error',
+        code: 'REQUEST_ERROR',
+        fallback: 'Request could not be completed',
+      };
+      errorName = meta.name;
+      message = error.message || meta.fallback;
+      // Domain errors (IamError, AuthenticationError, …) carry their own machine-readable
+      // code. Prefer it so clients can branch on e.g. PRIVILEGE_ESCALATION_BLOCKED rather
+      // than parsing a human-readable message.
+      const domainCode = (error as { code?: unknown }).code;
+      errorCode =
+        typeof domainCode === 'string' && !domainCode.startsWith('FST_') ? domainCode : meta.code;
     }
 
     const response: HttpErrorResponse = {

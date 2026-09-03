@@ -18,6 +18,14 @@ build/
 out/
 *.tsbuildinfo
 
+# Compiled output must never sit next to its source.
+# Vite and Node both resolve a sibling `./x.js` before `./x.ts`, so a stale emitted
+# file silently shadows the TypeScript it was built from.
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+
 # Coverage & Testing
 coverage/
 .nyc_output/
