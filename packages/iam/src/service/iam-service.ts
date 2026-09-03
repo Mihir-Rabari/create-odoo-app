@@ -492,7 +492,7 @@ export class IamService {
       effect: s.effect as 'allow' | 'deny',
       actions: s.actions,
       resources: s.resources,
-      conditions: s.conditions as Record<string, unknown> | undefined,
+      conditions: s.conditions as Record<string, Record<string, unknown>> | undefined,
     }));
   }
 
@@ -878,7 +878,7 @@ export class IamService {
         effect: s.effect as 'allow' | 'deny',
         actions: s.actions,
         resources: s.resources,
-        conditions: s.conditions,
+        conditions: s.conditions as Record<string, Record<string, unknown>> | null,
       })),
     };
   }

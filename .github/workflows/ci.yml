@@ -149,3 +149,18 @@ jobs:
 
       - name: Seed Is Idempotent
         run: pnpm db:seed
+
+      # Runs the IamService integration suite against the real Postgres/Redis
+      # containers above (seeded, so ROOT/ADMIN/AdministratorPolicy exist). This is
+      # the only CI job where these tests execute instead of skipping — see
+      # packages/iam/src/service/iam-service.integration.test.ts and the DATABASE_URL
+      # gate in vitest.config.ts for how the two stay in sync.
+      - name: IAM Service Integration Tests
+        # packages/iam/vitest.config.ts is a dedicated config, not the root one: v8
+        # coverage instruments/reports every file matching coverage.include (default:
+        # everything) whether or not it ran, so scoping just *test execution* to this
+        # package (e.g. `vitest run packages/iam` against the root config) still reports
+        # every other workspace file at 0% and fails the root config's global thresholds
+        # for reasons that have nothing to do with this package. A package-local
+        # coverage.include avoids that; see that file's own comments for the rest.
+        run: pnpm --filter @packages/iam test:coverage

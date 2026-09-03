@@ -26,6 +26,13 @@ async function runSmokeTest(): Promise<void> {
       throw new Error(`Generator returned failure: ${result.error}`);
     }
 
+    // Default invocation (no --with-infra) must never attempt to start Docker.
+    if (result.infraStarted) {
+      throw new Error(
+        'Expected infraStarted to be falsy when --with-infra was not requested; Docker Compose should never run by default.'
+      );
+    }
+
     console.log('[Smoke Test] 🔍 Validating generated directory structure...');
 
     const requiredPaths = [
