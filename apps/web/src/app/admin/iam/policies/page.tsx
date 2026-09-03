@@ -5,6 +5,9 @@ import { useIamPolicies, useCreatePolicy, useDeletePolicy, useIamPolicy } from '
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { FileCode2, Plus, Trash2, AlertCircle, Eye, X } from 'lucide-react';
 import type { PolicyStatement } from '@packages/validation';
 import { SUPPORTED_CONDITION_OPERATORS } from '@packages/validation';
@@ -59,7 +62,9 @@ export default function PoliciesManagementPage() {
     // Validate statements
     for (const stmt of statements) {
       if (!stmt.actions || stmt.actions.length === 0) {
-        setError('Every statement must specify at least one action (e.g. users:read or users:*)');
+        const msg = 'Every statement must specify at least one action (e.g. users:read or users:*)';
+        setError(msg);
+        toast.error('Validation error', { description: msg });
         return;
       }
     }
@@ -68,21 +73,30 @@ export default function PoliciesManagementPage() {
       await createPolicyMutation.mutateAsync({
         name,
         description: description || undefined,
-        statements });
+        statements,
+      });
+      toast.success(`Policy '${name}' created successfully`);
       setName('');
       setDescription('');
       setStatements([{ effect: 'allow', actions: ['users:read'], resources: ['*'] }]);
       setShowCreate(false);
       refetch();
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to create policy'));
+      const msg = getErrorMessage(err, 'Failed to create policy');
+      setError(msg);
+      toast.error('Creation failed', { description: msg });
     }
   };
 
   const handleDelete = async (policyId: string, policyName: string) => {
     if (confirm(`Are you sure you want to delete policy '${policyName}'?`)) {
-      await deletePolicyMutation.mutateAsync(policyId);
-      refetch();
+      try {
+        await deletePolicyMutation.mutateAsync(policyId);
+        toast.success(`Policy '${policyName}' deleted`);
+        refetch();
+      } catch {
+        toast.error('Failed to delete policy');
+      }
     }
   };
 
@@ -107,7 +121,7 @@ export default function PoliciesManagementPage() {
 
       {/* Create Policy Form */}
       {showCreate && (
-        <Card className="border-primary/20">
+        <Card className="border-primary/20 shadow-md">
           <form onSubmit={handleCreate}>
             <CardHeader>
               <CardTitle className="text-base">Create New IAM Policy</CardTitle>
@@ -125,24 +139,24 @@ export default function PoliciesManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Policy Name</label>
-                  <input
+                  <Label htmlFor="policy-name">Policy Name</Label>
+                  <Input
+                    id="policy-name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. ReadOnlyUsersPolicy"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Description</label>
-                  <input
+                  <Label htmlFor="policy-desc">Description</Label>
+                  <Input
+                    id="policy-desc"
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Policy purpose and scope"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   />
                 </div>
               </div>
@@ -150,9 +164,7 @@ export default function PoliciesManagementPage() {
               {/* Statements Builder */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-foreground">
-                    Policy Statements (Allow / Deny)
-                  </label>
+                  <Label>Policy Statements (Allow / Deny)</Label>
                   <Button type="button" variant="outline" size="sm" onClick={addStatement} className="h-7 text-xs">
                     <Plus className="h-3 w-3 mr-1" /> Add Statement
                   </Button>
@@ -163,15 +175,15 @@ export default function PoliciesManagementPage() {
                   {SUPPORTED_CONDITION_OPERATORS.map((op, i) => (
                     <React.Fragment key={op}>
                       {i > 0 && ', '}
-                      <code className="font-mono text-primary">{op}</code>
+                      <code className="font-mono text-primary bg-muted px-1 py-0.5 rounded">{op}</code>
                     </React.Fragment>
                   ))}
-                  . Any other operator is rejected by the API.
+                  .
                 </p>
 
                 <div className="space-y-3">
                   {statements.map((stmt, idx) => (
-                    <div key={idx} className="p-3 rounded-lg border bg-muted/20 space-y-2 text-xs">
+                    <div key={idx} className="p-3 rounded-lg border bg-card/60 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-foreground">Statement #{idx + 1}</span>
                         {statements.length > 1 && (
@@ -189,15 +201,13 @@ export default function PoliciesManagementPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div>
-                          <label className="text-[11px] text-muted-foreground block mb-1">
-                            Effect
-                          </label>
+                          <Label className="text-[11px] text-muted-foreground block mb-1">Effect</Label>
                           <select
                             value={stmt.effect}
                             onChange={(e) =>
                               updateStatementEffect(idx, e.target.value as 'allow' | 'deny')
                             }
-                            className="w-full rounded border border-input bg-background px-2 py-1 text-xs"
+                            className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
                           >
                             <option value="allow">ALLOW</option>
                             <option value="deny">DENY (Overrides Allow)</option>
@@ -205,16 +215,16 @@ export default function PoliciesManagementPage() {
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="text-[11px] text-muted-foreground block mb-1">
+                          <Label className="text-[11px] text-muted-foreground block mb-1">
                             Actions (comma-separated, e.g. <code className="font-mono text-primary">users:read, roles:*</code>)
-                          </label>
-                          <input
+                          </Label>
+                          <Input
                             type="text"
                             required
                             placeholder="e.g. users:read, roles:read, profile:*:self"
                             value={stmt.actions.join(', ')}
                             onChange={(e) => updateStatementActions(idx, e.target.value)}
-                            className="w-full rounded border border-input bg-background px-2 py-1 text-xs font-mono"
+                            className="font-mono text-xs"
                           />
                         </div>
                       </div>
@@ -238,7 +248,7 @@ export default function PoliciesManagementPage() {
 
       {/* Selected Policy Statement Modal / Drawer */}
       {selectedPolicyDetail && (
-        <Card className="border-primary/30 bg-primary/[0.02]">
+        <Card className="border-primary/30 bg-card/80 shadow-md">
           <CardHeader className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -292,7 +302,7 @@ export default function PoliciesManagementPage() {
                   {stmt.conditions && Object.keys(stmt.conditions).length > 0 && (
                     <div className="text-[11px] text-muted-foreground pt-1">
                       Conditions:{' '}
-                      <code className="font-mono">{JSON.stringify(stmt.conditions)}</code>
+                      <code className="font-mono bg-muted px-1 py-0.5 rounded">{JSON.stringify(stmt.conditions)}</code>
                     </div>
                   )}
                 </div>
@@ -310,7 +320,7 @@ export default function PoliciesManagementPage() {
           <div className="p-8 text-center text-sm text-muted-foreground">No policies configured.</div>
         ) : (
           policies.map((policy) => (
-            <Card key={policy.id}>
+            <Card key={policy.id} className="border-border shadow-sm">
               <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

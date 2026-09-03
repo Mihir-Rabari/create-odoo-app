@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { UserPlus, User, Mail, AlertCircle, KeyRound, Shield } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -32,6 +35,9 @@ export default function SignupPage() {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long');
+      toast.error('Weak password', {
+        description: 'Password must be at least 8 characters long.',
+      });
       return;
     }
 
@@ -39,9 +45,16 @@ export default function SignupPage() {
 
     try {
       await signup({ name, email, password });
+      toast.success('Account created successfully!', {
+        description: 'Welcome to your new workspace.',
+      });
       router.push('/dashboard');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
+      const msg = getErrorMessage(err, 'Registration failed. Please try again.');
+      setError(msg);
+      toast.error('Registration failed', {
+        description: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -51,7 +64,7 @@ export default function SignupPage() {
     <div className="container flex min-h-[calc(100vh-14rem)] items-center justify-center py-12">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2 shadow-sm">
             <UserPlus className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
@@ -60,7 +73,7 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <Card>
+        <Card className="border-border shadow-md">
           <form onSubmit={handleSubmit}>
             <CardHeader className="space-y-1 pb-4">
               <div className="flex items-center justify-between">
@@ -83,48 +96,42 @@ export default function SignupPage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="name">
-                  Full Name
-                </label>
+                <Label htmlFor="name">Full Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Jane Doe"
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="email">
-                  Email Address
-                </label>
+                <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="jane@example.com"
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="password">
-                  Password (min. 8 characters)
-                </label>
+                <Label htmlFor="password">Password (min. 8 characters)</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="password"
                     type="password"
                     required
@@ -132,7 +139,7 @@ export default function SignupPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
@@ -154,7 +161,7 @@ export default function SignupPage() {
           </form>
         </Card>
 
-        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
+        <div className="rounded-lg border border-border bg-card/60 p-3 text-xs text-muted-foreground flex items-center gap-2">
           <Shield className="h-4 w-4 text-primary shrink-0" />
           <span>New accounts automatically receive baseline self-management policies.</span>
         </div>

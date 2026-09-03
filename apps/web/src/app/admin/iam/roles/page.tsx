@@ -5,10 +5,14 @@ import {
   useIamRoles,
   useIamPolicies,
   useCreateRole,
-  useDeleteRole } from '@/hooks/use-iam';
+  useDeleteRole,
+} from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { ShieldCheck, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -32,21 +36,30 @@ export default function RolesManagementPage() {
       await createRoleMutation.mutateAsync({
         name,
         description: description || undefined,
-        policyIds: selectedPolicies });
+        policyIds: selectedPolicies,
+      });
+      toast.success(`Role '${name}' created successfully`);
       setName('');
       setDescription('');
       setSelectedPolicies([]);
       setShowCreate(false);
       refetch();
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to create role'));
+      const msg = getErrorMessage(err, 'Failed to create role');
+      setError(msg);
+      toast.error('Creation failed', { description: msg });
     }
   };
 
   const handleDelete = async (roleId: string, roleName: string) => {
     if (confirm(`Are you sure you want to delete role '${roleName}'?`)) {
-      await deleteRoleMutation.mutateAsync(roleId);
-      refetch();
+      try {
+        await deleteRoleMutation.mutateAsync(roleId);
+        toast.success(`Role '${roleName}' deleted`);
+        refetch();
+      } catch {
+        toast.error('Failed to delete role');
+      }
     }
   };
 
@@ -77,7 +90,7 @@ export default function RolesManagementPage() {
 
       {/* Create Role Form */}
       {showCreate && (
-        <Card className="border-primary/20">
+        <Card className="border-primary/20 shadow-md">
           <form onSubmit={handleCreate}>
             <CardHeader>
               <CardTitle className="text-base">Create New IAM Role</CardTitle>
@@ -93,31 +106,31 @@ export default function RolesManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Role Name</label>
-                  <input
+                  <Label htmlFor="role-name">Role Name</Label>
+                  <Input
+                    id="role-name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. AUDITOR"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Description</label>
-                  <input
+                  <Label htmlFor="role-desc">Description</Label>
+                  <Input
+                    id="role-desc"
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Description of role responsibilities"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   />
                 </div>
               </div>
 
               {policies && policies.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Attach Policies</label>
+                  <Label>Attach Policies</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md bg-muted/20">
                     {policies.map((pol) => (
                       <label
@@ -158,7 +171,7 @@ export default function RolesManagementPage() {
           <div className="p-8 text-center text-sm text-muted-foreground">No roles configured.</div>
         ) : (
           roles.map((role) => (
-            <Card key={role.id}>
+            <Card key={role.id} className="border-border shadow-sm">
               <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

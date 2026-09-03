@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { LogIn, Lock, Mail, AlertCircle, ShieldAlert, KeyRound } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -33,9 +36,16 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
+      toast.success('Signed in successfully', {
+        description: 'Welcome back to your workspace.',
+      });
       router.push('/dashboard');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Login failed. Please check your credentials.'));
+      const msg = getErrorMessage(err, 'Login failed. Please check your credentials.');
+      setError(msg);
+      toast.error('Authentication failed', {
+        description: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -45,13 +55,16 @@ export default function LoginPage() {
     setEmail('root@example.com');
     setPassword('RootSecurePass123!');
     setError(null);
+    toast.info('Root credentials loaded', {
+      description: 'Click Sign In to authenticate as ROOT.',
+    });
   };
 
   return (
     <div className="container flex min-h-[calc(100vh-14rem)] items-center justify-center py-12">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2 shadow-sm">
             <Lock className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Sign in to your account</h1>
@@ -60,7 +73,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Card>
+        <Card className="border-border shadow-md">
           <form onSubmit={handleSubmit}>
             <CardHeader className="space-y-1 pb-4">
               <div className="flex items-center justify-between">
@@ -83,37 +96,33 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="email">
-                  Email Address
-                </label>
+                <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="user@example.com"
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="password">
-                  Password
-                </label>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="password"
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
@@ -136,7 +145,7 @@ export default function LoginPage() {
         </Card>
 
         {/* Quick Root Bootstrap Helper */}
-        <div className="rounded-lg border border-border bg-muted/40 p-4 text-xs space-y-2">
+        <div className="rounded-lg border border-border bg-card/60 p-4 text-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-semibold flex items-center gap-1.5 text-foreground">
               <ShieldAlert className="h-3.5 w-3.5 text-blue-500" />
@@ -151,8 +160,8 @@ export default function LoginPage() {
               Fill Root Credentials
             </Button>
           </div>
-          <p className="text-muted-foreground text-[11px]">
-            Initial ROOT administrator bootstrapped from <code className="font-mono text-[10px] bg-background px-1 py-0.5 rounded">.env</code>: <code className="font-mono text-primary">root@example.com</code> / <code className="font-mono text-primary">RootSecurePass123!</code>
+          <p className="text-muted-foreground text-[11px] leading-relaxed">
+            Initial ROOT administrator bootstrapped from <code className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded">.env</code>: <code className="font-mono text-primary font-semibold">root@example.com</code> / <code className="font-mono text-primary font-semibold">RootSecurePass123!</code>
           </p>
         </div>
       </div>
