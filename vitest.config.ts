@@ -1,9 +1,23 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // Mirrors apps/web/tsconfig.json's "@/*" path mapping so component/hook tests
+      // that import via the app's own alias resolve the same way the Next.js build does.
+      '@': fileURLToPath(new URL('./apps/web/src', import.meta.url)),
+    },
+  },
   test: {
     globals: true,
     environment: 'node',
+    // apps/web ships React components and hooks that need a DOM (document, window,
+    // localStorage) to render under @testing-library/react. The rest of the workspace
+    // (API, packages) is server-side code that runs faster and more realistically under
+    // plain node, so only apps/web opts into jsdom rather than flipping it globally.
+    environmentMatchGlobs: [['apps/web/**', 'jsdom']],
+    setupFiles: ['./apps/web/vitest.setup.ts'],
     env: {
       NODE_ENV: 'test',
       // Silence the API's request logger by default. Every `app.inject()` otherwise
@@ -13,7 +27,7 @@ export default defineConfig({
       // (`.env` also sets LOG_LEVEL, which is why this cannot be keyed off its absence.)
       LOG_LEVEL: process.env.LOG_LEVEL ?? 'silent',
     },
-    include: ['**/*.test.ts', '**/*.spec.ts'],
+    include: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**'],
     // Vitest defaults to 5s, which is too tight for the suites that copy the whole
     // template tree or pack 14 skill bundles. Those comfortably fit on Linux and on a
@@ -36,7 +50,13 @@ export default defineConfig({
         '**/*.config.*',
         '**/scripts/**',
         '**/infrastructure/**',
-        'apps/web/**',
+        // Next.js app-router pages/layouts and presentational components are framework
+        // glue and markup, best covered by e2e/visual tests, not unit coverage. Issue #6
+        // scopes apps/web unit coverage to hooks/contexts/lib, where the state and
+        // request logic actually lives — component/page coverage is a follow-up.
+        'apps/web/src/app/**',
+        'apps/web/src/components/**',
+        'apps/web/**/*.config.*',
       ],
       // Without thresholds, `test:coverage` reported numbers that nothing acted on and
       // the CI step could never fail.
@@ -46,10 +66,18 @@ export default defineConfig({
       // paths (most of iam-service) push the real figure higher when Postgres is up;
       // pinning to that number would make the suite fail depending on whether Docker
       // happened to be running.
+      //
+      // apps/web joined the coverage report in issue #6 (previously excluded entirely).
+      // Its hooks/contexts/lib are now unit-tested but its components/pages are not yet
+      // (out of scope for that issue — see the coverage `exclude` list above), so the
+      // measured global numbers moved. These floors are set a couple points below what
+      // `pnpm test:coverage` actually measured on a clean checkout (no Docker/Postgres),
+      // so the gate ratchets up from a real baseline instead of chasing an aspirational
+      // one that starts red.
       thresholds: {
         statements: 58,
-        branches: 75,
-        functions: 55,
+        branches: 78,
+        functions: 48,
         lines: 58,
 
         // Tighter floors on the security-critical pure logic. These modules decide who
