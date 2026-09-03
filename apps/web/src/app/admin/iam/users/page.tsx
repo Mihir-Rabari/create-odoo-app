@@ -6,6 +6,24 @@ import { useIamUsers, useUpdateUserStatus } from '@/hooks/use-iam';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
 import {
   Users,
   Search,
@@ -14,26 +32,31 @@ import {
   Eye,
   Ban,
   CheckCircle2,
-  AlertTriangle } from 'lucide-react';
+  AlertTriangle,
+} from 'lucide-react';
 import type { UserStatus } from '@packages/validation';
 
 export default function UsersManagementPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const { data, isLoading, refetch } = useIamUsers({
     page,
     limit: 10,
     search: search || undefined,
-    status: (statusFilter as UserStatus) || undefined });
+    status: statusFilter === 'ALL' ? undefined : (statusFilter as UserStatus),
+  });
 
   const updateStatusMutation = useUpdateUserStatus();
 
   const handleStatusChange = async (userId: string, newStatus: UserStatus) => {
-    if (confirm(`Are you sure you want to set this user's status to ${newStatus}?`)) {
+    try {
       await updateStatusMutation.mutateAsync({ id: userId, data: { status: newStatus } });
+      toast.success(`User status updated to ${newStatus}`);
       refetch();
+    } catch {
+      toast.error('Failed to update user status');
     }
   };
 
@@ -52,12 +75,12 @@ export default function UsersManagementPage() {
       </div>
 
       {/* Filter Bar */}
-      <Card>
+      <Card className="border-border shadow-sm">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search by email or name..."
                 value={search}
@@ -65,33 +88,39 @@ export default function UsersManagementPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="pl-9"
               />
             </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="DISABLED">Disabled</option>
-            </select>
+            <div className="w-full sm:w-48">
+              <Select
+                value={statusFilter}
+                onValueChange={(val: string) => {
+                  setStatusFilter(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                  <SelectItem value="DISABLED">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Users Table */}
-      <Card>
+      <Card className="border-border shadow-sm overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Loading users...
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Loading user accounts...
             </div>
           ) : !data || data.data.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground space-y-2">
@@ -99,106 +128,121 @@ export default function UsersManagementPage() {
               <p>No user accounts found matching your criteria.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b bg-muted/40 text-xs font-semibold text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Identity</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Created</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {data.data.map((u) => {
-                    const isRoot = u.identityType === 'ROOT';
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Identity</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.data.map((u) => {
+                  const isRoot = u.identityType === 'ROOT';
+                  const initials = u.name
+                    ? u.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)
+                    : u.email.charAt(0).toUpperCase();
 
-                    return (
-                      <tr key={u.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">{u.name}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{u.email}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={isRoot ? 'destructive' : 'outline'}
-                            className="text-[10px] uppercase font-mono"
-                          >
-                            {isRoot ? '👑 ROOT' : u.identityType}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={
-                              u.status === 'ACTIVE'
-                                ? 'default'
-                                : u.status === 'SUSPENDED'
-                                ? 'secondary'
-                                : 'destructive'
-                            }
-                            className="text-[10px] uppercase font-semibold"
-                          >
-                            {u.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {new Date(u.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Link href={`/admin/iam/users/${u.id}`}>
-                              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
-                                <Eye className="h-3.5 w-3.5 mr-1" />
-                                Inspect
-                              </Button>
-                            </Link>
-
-                            {!isRoot && (
-                              <>
-                                {u.status === 'ACTIVE' ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleStatusChange(u.id, 'SUSPENDED')}
-                                    className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                                    title="Suspend User"
-                                  >
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleStatusChange(u.id, 'ACTIVE')}
-                                    className="h-8 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                                    title="Activate User"
-                                  >
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-
-                                {u.status !== 'DISABLED' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleStatusChange(u.id, 'DISABLED')}
-                                    className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10"
-                                    title="Disable User"
-                                  >
-                                    <Ban className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                              </>
-                            )}
+                  return (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-foreground">{u.name}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{u.email}</div>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={isRoot ? 'destructive' : 'outline'}
+                          className="text-[10px] uppercase font-mono"
+                        >
+                          {isRoot ? 'ROOT' : u.identityType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            u.status === 'ACTIVE'
+                              ? 'success'
+                              : u.status === 'SUSPENDED'
+                              ? 'warning'
+                              : 'destructive'
+                          }
+                          className="text-[10px] uppercase font-semibold"
+                        >
+                          {u.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link href={`/admin/iam/users/${u.id}`}>
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                              <Eye className="h-3.5 w-3.5 mr-1" />
+                              Inspect
+                            </Button>
+                          </Link>
+
+                          {!isRoot && (
+                            <>
+                              {u.status === 'ACTIVE' ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStatusChange(u.id, 'SUSPENDED')}
+                                  className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                                  title="Suspend User"
+                                >
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStatusChange(u.id, 'ACTIVE')}
+                                  className="h-8 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                                  title="Activate User"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+
+                              {u.status !== 'DISABLED' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStatusChange(u.id, 'DISABLED')}
+                                  className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10"
+                                  title="Disable User"
+                                >
+                                  <Ban className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
 
           {/* Pagination */}

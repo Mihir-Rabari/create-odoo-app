@@ -15,10 +15,14 @@ import {
   useAddUserToGroup,
   useRemoveUserFromGroup,
   useAttachDirectPolicy,
-  useDetachDirectPolicy } from '@/hooks/use-iam';
+  useDetachDirectPolicy,
+} from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 import {
   ChevronLeft,
   ShieldCheck,
@@ -29,7 +33,8 @@ import {
   Ban,
   Plus,
   Trash2,
-  Sparkles } from 'lucide-react';
+  Sparkles,
+} from 'lucide-react';
 import type { UserStatus } from '@packages/validation';
 
 export default function UserInspectorPage() {
@@ -60,8 +65,8 @@ export default function UserInspectorPage() {
   if (userLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-        <div className="h-64 bg-muted animate-pulse rounded-lg" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     );
   }
@@ -79,53 +84,96 @@ export default function UserInspectorPage() {
   }
 
   const isRoot = user.identityType === 'ROOT';
+  const initials = user.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : user.email.charAt(0).toUpperCase();
 
   const handleStatusChange = async (newStatus: UserStatus) => {
-    await updateStatusMutation.mutateAsync({ id: userId, data: { status: newStatus } });
-    refetchUser();
-    refetchPerms();
+    try {
+      await updateStatusMutation.mutateAsync({ id: userId, data: { status: newStatus } });
+      toast.success(`User status changed to ${newStatus}`);
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to change user status');
+    }
   };
 
   const handleAssignRole = async () => {
     if (!selectedRole) return;
-    await assignRoleMutation.mutateAsync({ userId, roleId: selectedRole });
-    setSelectedRole('');
-    refetchUser();
-    refetchPerms();
+    try {
+      await assignRoleMutation.mutateAsync({ userId, roleId: selectedRole });
+      toast.success('Role assigned');
+      setSelectedRole('');
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to assign role');
+    }
   };
 
   const handleRemoveRole = async (roleId: string) => {
-    await removeRoleMutation.mutateAsync({ userId, roleId });
-    refetchUser();
-    refetchPerms();
+    try {
+      await removeRoleMutation.mutateAsync({ userId, roleId });
+      toast.success('Role removed');
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to remove role');
+    }
   };
 
   const handleAddGroup = async () => {
     if (!selectedGroup) return;
-    await addGroupMutation.mutateAsync({ userId, groupId: selectedGroup });
-    setSelectedGroup('');
-    refetchUser();
-    refetchPerms();
+    try {
+      await addGroupMutation.mutateAsync({ userId, groupId: selectedGroup });
+      toast.success('Added to group');
+      setSelectedGroup('');
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to add to group');
+    }
   };
 
   const handleRemoveGroup = async (groupId: string) => {
-    await removeGroupMutation.mutateAsync({ userId, groupId });
-    refetchUser();
-    refetchPerms();
+    try {
+      await removeGroupMutation.mutateAsync({ userId, groupId });
+      toast.success('Removed from group');
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to remove from group');
+    }
   };
 
   const handleAttachPolicy = async () => {
     if (!selectedPolicy) return;
-    await attachPolicyMutation.mutateAsync({ userId, policyId: selectedPolicy });
-    setSelectedPolicy('');
-    refetchUser();
-    refetchPerms();
+    try {
+      await attachPolicyMutation.mutateAsync({ userId, policyId: selectedPolicy });
+      toast.success('Direct policy attached');
+      setSelectedPolicy('');
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to attach policy');
+    }
   };
 
   const handleDetachPolicy = async (policyId: string) => {
-    await detachPolicyMutation.mutateAsync({ userId, policyId });
-    refetchUser();
-    refetchPerms();
+    try {
+      await detachPolicyMutation.mutateAsync({ userId, policyId });
+      toast.success('Direct policy detached');
+      refetchUser();
+      refetchPerms();
+    } catch {
+      toast.error('Failed to detach policy');
+    }
   };
 
   // Available options not already assigned
@@ -147,29 +195,36 @@ export default function UserInspectorPage() {
           <span>Back to Users</span>
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <span>{user.name}</span>
-              <Badge
-                variant={isRoot ? 'destructive' : 'outline'}
-                className="text-xs uppercase font-mono"
-              >
-                {isRoot ? '👑 ROOT' : user.identityType}
-              </Badge>
-              <Badge
-                variant={
-                  user.status === 'ACTIVE'
-                    ? 'default'
-                    : user.status === 'SUSPENDED'
-                    ? 'secondary'
-                    : 'destructive'
-                }
-                className="text-xs uppercase font-semibold"
-              >
-                {user.status}
-              </Badge>
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 font-mono">{user.email}</p>
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 border shadow-sm">
+              <AvatarFallback className="bg-primary/10 text-primary font-bold text-base">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <span>{user.name}</span>
+                <Badge
+                  variant={isRoot ? 'destructive' : 'outline'}
+                  className="text-xs uppercase font-mono"
+                >
+                  {isRoot ? 'ROOT' : user.identityType}
+                </Badge>
+                <Badge
+                  variant={
+                    user.status === 'ACTIVE'
+                      ? 'success'
+                      : user.status === 'SUSPENDED'
+                      ? 'warning'
+                      : 'destructive'
+                  }
+                  className="text-xs uppercase font-semibold"
+                >
+                  {user.status}
+                </Badge>
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5 font-mono">{user.email}</p>
+            </div>
           </div>
 
           {!isRoot && (
@@ -213,7 +268,7 @@ export default function UserInspectorPage() {
       </div>
 
       {/* Live Effective Permissions Breakdown */}
-      <Card className="border-primary/20 bg-primary/[0.02]">
+      <Card className="border-primary/20 bg-card/60 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -232,7 +287,7 @@ export default function UserInspectorPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {permsLoading ? (
-            <div className="h-16 bg-muted animate-pulse rounded" />
+            <Skeleton className="h-16 rounded-lg" />
           ) : !effectiveData || effectiveData.effectivePermissions.length === 0 ? (
             <div className="p-4 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
               No effective permissions granted to this user.
@@ -256,7 +311,7 @@ export default function UserInspectorPage() {
       {/* IAM Assignments Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Roles */}
-        <Card>
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-primary" />
@@ -302,7 +357,7 @@ export default function UserInspectorPage() {
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                  className="flex-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs focus:ring-1 focus:ring-ring outline-none"
                 >
                   <option value="">Select role to assign...</option>
                   {availableRoles.map((r) => (
@@ -320,7 +375,7 @@ export default function UserInspectorPage() {
         </Card>
 
         {/* Groups */}
-        <Card>
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <FolderTree className="h-4 w-4 text-primary" />
@@ -366,7 +421,7 @@ export default function UserInspectorPage() {
                 <select
                   value={selectedGroup}
                   onChange={(e) => setSelectedGroup(e.target.value)}
-                  className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                  className="flex-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs focus:ring-1 focus:ring-ring outline-none"
                 >
                   <option value="">Select group to join...</option>
                   {availableGroups.map((g) => (
@@ -384,7 +439,7 @@ export default function UserInspectorPage() {
         </Card>
 
         {/* Direct Policies */}
-        <Card>
+        <Card className="border-border shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <FileCode2 className="h-4 w-4 text-primary" />
@@ -430,7 +485,7 @@ export default function UserInspectorPage() {
                 <select
                   value={selectedPolicy}
                   onChange={(e) => setSelectedPolicy(e.target.value)}
-                  className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                  className="flex-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs focus:ring-1 focus:ring-ring outline-none"
                 >
                   <option value="">Select policy to attach...</option>
                   {availablePolicies.map((p) => (

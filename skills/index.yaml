@@ -23,7 +23,7 @@ skills:
 
   - name: frontend
     path: skills/frontend/SKILL.md
-    description: Next.js App Router, Tailwind CSS, TanStack Query, AuthContext, and permission-aware UI.
+    description: Next.js App Router, shadcn/ui components, Tailwind CSS, TanStack Query, AuthContext, and permission-aware UI.
 
   - name: security
     path: skills/security/SKILL.md

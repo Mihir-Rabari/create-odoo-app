@@ -5,10 +5,14 @@ import {
   useIamGroups,
   useIamPolicies,
   useCreateGroup,
-  useDeleteGroup } from '@/hooks/use-iam';
+  useDeleteGroup,
+} from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { FolderTree, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -32,21 +36,30 @@ export default function GroupsManagementPage() {
       await createGroupMutation.mutateAsync({
         name,
         description: description || undefined,
-        policyIds: selectedPolicies });
+        policyIds: selectedPolicies,
+      });
+      toast.success(`Group '${name}' created successfully`);
       setName('');
       setDescription('');
       setSelectedPolicies([]);
       setShowCreate(false);
       refetch();
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to create group'));
+      const msg = getErrorMessage(err, 'Failed to create group');
+      setError(msg);
+      toast.error('Creation failed', { description: msg });
     }
   };
 
   const handleDelete = async (groupId: string, groupName: string) => {
     if (confirm(`Are you sure you want to delete group '${groupName}'?`)) {
-      await deleteGroupMutation.mutateAsync(groupId);
-      refetch();
+      try {
+        await deleteGroupMutation.mutateAsync(groupId);
+        toast.success(`Group '${groupName}' deleted`);
+        refetch();
+      } catch {
+        toast.error('Failed to delete group');
+      }
     }
   };
 
@@ -77,7 +90,7 @@ export default function GroupsManagementPage() {
 
       {/* Create Group Form */}
       {showCreate && (
-        <Card className="border-primary/20">
+        <Card className="border-primary/20 shadow-md">
           <form onSubmit={handleCreate}>
             <CardHeader>
               <CardTitle className="text-base">Create New IAM Group</CardTitle>
@@ -93,31 +106,31 @@ export default function GroupsManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Group Name</label>
-                  <input
+                  <Label htmlFor="group-name">Group Name</Label>
+                  <Input
+                    id="group-name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Engineering"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Description</label>
-                  <input
+                  <Label htmlFor="group-desc">Description</Label>
+                  <Input
+                    id="group-desc"
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Group purpose or department"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   />
                 </div>
               </div>
 
               {policies && policies.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-foreground">Attach Policies</label>
+                  <Label>Attach Policies</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md bg-muted/20">
                     {policies.map((pol) => (
                       <label
@@ -158,7 +171,7 @@ export default function GroupsManagementPage() {
           <div className="p-8 text-center text-sm text-muted-foreground">No groups configured.</div>
         ) : (
           groups.map((group) => (
-            <Card key={group.id}>
+            <Card key={group.id} className="border-border shadow-sm">
               <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

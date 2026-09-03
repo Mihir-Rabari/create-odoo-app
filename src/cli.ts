@@ -22,26 +22,30 @@ function getPackageVersion(): string {
   return '1.0.0';
 }
 
+import { runInteractivePrompts } from './prompts.js';
+
 function printHelp(): void {
   console.log(`
 \x1b[1mcreate-odoo-app\x1b[0m v${getPackageVersion()}
 
 Usage:
-  npx create-odoo-app@latest <project-name> [options]
+  npx create-odoo-app@latest [project-name] [options]
   npx create-odoo-app@latest . [options]
 
 Options:
+  -y, --yes         Skip interactive prompts and use defaults
+  --theme <name>    UI Theme palette (neutral, zinc, violet, rose)
   --skip-install    Skip installing dependencies with pnpm
   --skip-git        Skip initializing a new Git repository
-  --with-infra      Run "docker compose up -d" after install (opt-in; skipped
-                     automatically with --skip-install)
+  --with-infra      Run "docker compose up -d" after install
   -h, --help        Display this help message
   -v, --version     Display package version
 
 Examples:
+  npx create-odoo-app
   npx create-odoo-app my-app
+  npx create-odoo-app my-app --yes
   npx create-odoo-app my-app --skip-install
-  npx create-odoo-app my-app --with-infra
   npx create-odoo-app .
 `);
 }
@@ -49,9 +53,9 @@ Examples:
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
-  if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+  if (args.includes('-h') || args.includes('--help')) {
     printHelp();
-    process.exit(args.length === 0 ? 1 : 0);
+    process.exit(0);
   }
 
   if (args.includes('-v') || args.includes('--version')) {
@@ -60,21 +64,63 @@ async function main(): Promise<void> {
   }
 
   // Parse positional and flag arguments
-  let projectName = '';
-  const skipInstall = args.includes('--skip-install');
-  const skipGit = args.includes('--skip-git');
-  const withInfra = args.includes('--with-infra');
+  let positionalName = '';
+  const nonInteractive = args.includes('-y') || args.includes('--yes');
+  const hasSkipInstall = args.includes('--skip-install');
+  const hasSkipGit = args.includes('--skip-git');
+  const hasWithInfra = args.includes('--with-infra');
 
-  for (const arg of args) {
-    if (!arg.startsWith('-') && !projectName) {
-      projectName = arg;
+  const validThemes = ['neutral', 'zinc', 'violet', 'rose'] as const;
+  type Theme = (typeof validThemes)[number];
+  let themeFlag: Theme | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--theme') {
+      const value = args[i + 1];
+      if (!value || !(validThemes as readonly string[]).includes(value)) {
+        logger.error(
+          `Invalid --theme value "${value ?? ''}". Expected one of: ${validThemes.join(', ')}.`
+        );
+        process.exit(1);
+      }
+      themeFlag = value as Theme;
+      i++; // consume the value so it isn't mistaken for the positional project name
+      continue;
+    }
+    if (!arg.startsWith('-') && !positionalName) {
+      positionalName = arg;
     }
   }
 
+  const isInteractive = Boolean(process.stdout.isTTY) && !nonInteractive;
+
+  let projectName = positionalName;
+  let skipInstall = hasSkipInstall;
+  let skipGit = hasSkipGit;
+  let withInfra = hasWithInfra;
+  let theme: Theme = themeFlag ?? 'neutral';
+
+  if (isInteractive && (!positionalName || !nonInteractive)) {
+    const promptResult = await runInteractivePrompts(positionalName || undefined, {
+      skipInstall: hasSkipInstall ? true : undefined,
+      skipGit: hasSkipGit ? true : undefined,
+      withInfra: hasWithInfra ? true : undefined,
+    });
+
+    if (!promptResult) {
+      process.exit(0);
+    }
+
+    projectName = promptResult.projectName;
+    theme = promptResult.theme;
+    skipInstall = !promptResult.installDeps;
+    skipGit = !promptResult.initGit;
+    withInfra = promptResult.startInfra;
+  }
+
   if (!projectName) {
-    logger.error('Please specify a project directory name.');
-    console.log('  npx create-odoo-app <project-name>\n');
-    process.exit(1);
+    projectName = 'my-odoo-app';
   }
 
   const validation = validateProjectName(projectName);
@@ -91,6 +137,7 @@ async function main(): Promise<void> {
       skipInstall,
       skipGit,
       withInfra,
+      theme,
       templateDir: path.resolve(__dirname, '..'),
     });
 

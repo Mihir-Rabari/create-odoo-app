@@ -5,7 +5,11 @@ import { useAuth } from '@/hooks/use-auth';
 import { api } from '@/lib/api-client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import { User, Mail, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -36,8 +40,8 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="container py-12 max-w-2xl space-y-6">
-        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-        <div className="h-64 bg-muted animate-pulse rounded-lg" />
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     );
   }
@@ -60,8 +64,15 @@ export default function ProfilePage() {
       await api.profile.update({ name, email });
       await refreshSession();
       setProfileSuccess('Profile details updated successfully');
+      toast.success('Profile updated', {
+        description: 'Your profile changes have been saved.',
+      });
     } catch (err: unknown) {
-      setProfileError(getErrorMessage(err, 'Failed to update profile'));
+      const msg = getErrorMessage(err, 'Failed to update profile');
+      setProfileError(msg);
+      toast.error('Update failed', {
+        description: msg,
+      });
     } finally {
       setProfileLoading(false);
     }
@@ -73,7 +84,9 @@ export default function ProfilePage() {
     setPasswordSuccess(null);
 
     if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters long');
+      const msg = 'New password must be at least 8 characters long';
+      setPasswordError(msg);
+      toast.error('Weak password', { description: msg });
       return;
     }
 
@@ -82,10 +95,17 @@ export default function ProfilePage() {
     try {
       await api.profile.changePassword({ currentPassword, newPassword });
       setPasswordSuccess('Password changed successfully');
+      toast.success('Password updated', {
+        description: 'Your password has been changed securely.',
+      });
       setCurrentPassword('');
       setNewPassword('');
     } catch (err: unknown) {
-      setPasswordError(getErrorMessage(err, 'Failed to change password'));
+      const msg = getErrorMessage(err, 'Failed to change password');
+      setPasswordError(msg);
+      toast.error('Password change failed', {
+        description: msg,
+      });
     } finally {
       setPasswordLoading(false);
     }
@@ -102,7 +122,7 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 gap-6">
         {/* Profile Card */}
-        <Card>
+        <Card className="border-border shadow-sm">
           <form onSubmit={handleUpdateProfile}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -115,7 +135,7 @@ export default function ProfilePage() {
                 </Badge>
               </div>
               <CardDescription>
-                Guarded by policy permission <code className="font-mono text-xs">profile:update:self</code>
+                Guarded by policy permission <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">profile:update:self</code>
               </CardDescription>
             </CardHeader>
 
@@ -134,35 +154,31 @@ export default function ProfilePage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="prof-name">
-                  Full Name
-                </label>
+                <Label htmlFor="prof-name">Full Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="prof-name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="prof-email">
-                  Email Address
-                </label>
+                <Label htmlFor="prof-email">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
+                  <Input
                     id="prof-email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="pl-9"
                   />
                 </div>
               </div>
@@ -177,7 +193,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Change Password Card */}
-        <Card>
+        <Card className="border-border shadow-sm">
           <form onSubmit={handleChangePassword}>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -204,25 +220,20 @@ export default function ProfilePage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="current-pwd">
-                  Current Password
-                </label>
-                <input
+                <Label htmlFor="current-pwd">Current Password</Label>
+                <Input
                   id="current-pwd"
                   type="password"
                   required
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground" htmlFor="new-pwd">
-                  New Password (min. 8 characters)
-                </label>
-                <input
+                <Label htmlFor="new-pwd">New Password (min. 8 characters)</Label>
+                <Input
                   id="new-pwd"
                   type="password"
                   required
@@ -230,7 +241,6 @@ export default function ProfilePage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
             </CardContent>
