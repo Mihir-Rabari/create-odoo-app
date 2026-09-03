@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2026-09-03
+
+### Fixed
+- **Interactive CLI prompts actually ship.** 1.1.0's release commit landed only the shadcn/ui redesign half of the feature; `src/prompts.ts` and the `cli.ts`/`generator.ts` wiring for it, along with `next-themes`/`sonner` integration (`theme-provider.tsx`, `theme-toggle.tsx`, `sonner.tsx`, `tooltip.tsx`, and the root layout wiring), were dropped before commit and are restored here.
+- `@clack/prompts` and `picocolors` moved from `devDependencies` to `dependencies` — as dev-only deps they were never installed for anyone running the published package, so the interactive wizard would have thrown `ERR_MODULE_NOT_FOUND` on first use.
+- `--theme <name>` is now actually parsed outside the interactive prompt path; it was documented in `--help` but silently ignored when combined with `-y`/`--yes`.
+- `scripts/verify-release.ts` now installs the packed artifact's production dependencies before executing it, matching what `npx create-odoo-app` does for a real user — it previously ran `dist/cli.js` straight out of the tarball with no `node_modules`, which is why the two bugs above weren't caught before publishing.
+
+---
+
 ## [1.1.0] - 2026-09-03
 
 ### Added

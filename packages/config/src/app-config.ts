@@ -12,7 +12,7 @@ export const AppConfig = {
   name: 'Production Starter Monorepo',
   slug: 'production-starter-monorepo',
   description: 'Production-ready full-stack starter with Fastify, Next.js, PostgreSQL, Redis, and MinIO',
-  version: '1.1.0',
+  version: '1.1.1',
   apiVersion: 'v1',
   apiPrefix: '/api',
 
