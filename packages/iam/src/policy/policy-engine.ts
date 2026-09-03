@@ -1,5 +1,6 @@
 import type { IdentityType, UserStatus } from '@packages/auth';
 import type { PolicyStatement } from '@packages/validation';
+import { SUPPORTED_CONDITION_OPERATORS } from '@packages/validation';
 import { permissionCatalog } from '../catalog/permission-catalog.js';
 
 export interface AuthorizationContext {
@@ -68,6 +69,15 @@ export function evaluateConditions(
       return false;
     }
     const operand = rawOperand as Record<string, unknown>;
+
+    // Guard against drift between this switch and the canonical operator list: the
+    // schema in `@packages/validation` is supposed to reject any operator not in
+    // `SUPPORTED_CONDITION_OPERATORS` before a policy is ever stored, but the engine
+    // still fails closed here in case a statement reaches it by some other path (a
+    // stale row, a direct DB write, a future schema bug).
+    if (!(SUPPORTED_CONDITION_OPERATORS as readonly string[]).includes(operator)) {
+      return false;
+    }
 
     switch (operator) {
       case 'StringEquals':
