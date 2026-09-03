@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Enable Corepack & Prepare pnpm
         run: |
@@ -38,14 +39,7 @@ jobs:
           corepack prepare pnpm@11.1.0 --activate
         shell: bash
 
-      - name: Upgrade npm for OIDC Trusted Publishing support
-        # actions/setup-node@v4 with node-version 22.x bundles whatever npm shipped with
-        # that Node release (10.9.8 as of this writing). npm's OIDC "Trusted Publishing"
-        # (an npm publish that authenticates via the workflow's own GitHub Actions OIDC
-        # token, no NPM_TOKEN secret needed) only landed in npm 11.5.1 — an older npm has
-        # no idea the mechanism exists and just publishes unauthenticated, failing with
-        # ENEEDAUTH. Trusted Publishing was correctly configured on the npm side; this was
-        # the actual gap.
+      - name: Upgrade npm for provenance & release publishing
         run: npm install -g npm@latest
         shell: bash
 
@@ -76,9 +70,11 @@ jobs:
       - name: Full Quality Gate & Pre-Release Verification
         run: pnpm release:check
 
-      - name: Publish to npm Registry via Trusted Publishing (OIDC)
+      - name: Publish to npm Registry
         if: ${{ !inputs.dry_run }}
         run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         if: ${{ !inputs.dry_run && startsWith(github.ref, 'refs/tags/v') }}
