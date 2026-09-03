@@ -58,7 +58,10 @@ describe('Profile API Routes (/api/v1/profile)', () => {
       },
     });
 
-    // Fastify schema validation fails before auth if invalid shape or returns 400
-    expect([400, 401]).toContain(response.statusCode);
+    // Body validation runs in preValidation, ahead of the auth preHandler, so a short
+    // newPassword is always a 400 — never a 401. Accepting either masked which of the
+    // two guards actually fired.
+    expect(response.statusCode).toBe(400);
+    expect(response.json().code).toBe('VALIDATION_ERROR');
   });
 });

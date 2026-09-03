@@ -20,6 +20,24 @@ function loadEnvFile(): void {
 loadEnvFile();
 
 /**
+ * Development placeholders shipped in `.env.example`.
+ *
+ * They exist so a fresh clone boots against Docker Compose with no configuration. They
+ * are published in the repository, so they are public knowledge and must never reach a
+ * production process — `assertProductionSecrets` enforces that.
+ *
+ * Declared once and referenced by both the schema defaults below and the guard, so the
+ * two can never disagree about what counts as a placeholder.
+ */
+export const DEV_PLACEHOLDERS = {
+  SESSION_SECRET: 'a_very_secret_32_character_string_for_session_cookies_change_in_prod',
+  INITIAL_ROOT_PASSWORD: 'RootSecurePass123!',
+  DATABASE_PASSWORD: 'postgres',
+  S3_ACCESS_KEY: 'minioadmin',
+  S3_SECRET_KEY: 'minioadmin',
+} as const;
+
+/**
  * Zod Schema for Environment Variables
  */
 export const envSchema = z.object({
@@ -34,12 +52,22 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   HOST: z.string().default('0.0.0.0'),
 
+  // Reverse proxy trust.
+  //
+  // Set this when the API sits behind nginx, a cloud load balancer, or Docker's
+  // ingress. Without it Fastify reports every request as originating from the proxy,
+  // which makes per-IP rate limiting meaningless and records the wrong address on
+  // sessions and audit logs.
+  //
+  // Accepts `true`/`false`, a hop count ("1"), or a comma-separated CIDR allowlist.
+  TRUST_PROXY: z.string().default('false'),
+
   // PostgreSQL Database
   DATABASE_URL: z.string().min(1).default('postgres://postgres:postgres@localhost:5432/app_db'),
   DATABASE_HOST: z.string().default('localhost'),
   DATABASE_PORT: z.coerce.number().int().positive().default(5432),
   DATABASE_USER: z.string().default('postgres'),
-  DATABASE_PASSWORD: z.string().default('postgres'),
+  DATABASE_PASSWORD: z.string().default(DEV_PLACEHOLDERS.DATABASE_PASSWORD),
   DATABASE_NAME: z.string().default('app_db'),
   DATABASE_SSL: z
     .enum(['true', 'false'])
@@ -57,8 +85,8 @@ export const envSchema = z.object({
   S3_ENDPOINT: z.string().default('http://localhost:9000'),
   S3_PORT: z.coerce.number().int().positive().default(9000),
   S3_REGION: z.string().default('us-east-1'),
-  S3_ACCESS_KEY: z.string().default('minioadmin'),
-  S3_SECRET_KEY: z.string().default('minioadmin'),
+  S3_ACCESS_KEY: z.string().default(DEV_PLACEHOLDERS.S3_ACCESS_KEY),
+  S3_SECRET_KEY: z.string().default(DEV_PLACEHOLDERS.S3_SECRET_KEY),
   S3_BUCKET: z.string().default('app-uploads'),
   S3_USE_SSL: z
     .enum(['true', 'false'])
@@ -76,19 +104,60 @@ export const envSchema = z.object({
   RESEND_FROM: z.string().email().optional().default('noreply@example.com'),
 
   // Authentication & Sessions (Phase 2)
-  SESSION_SECRET: z.string().min(16).default('a_very_secret_32_character_string_for_session_cookies_change_in_prod'),
+  SESSION_SECRET: z.string().min(16).default(DEV_PLACEHOLDERS.SESSION_SECRET),
   SESSION_COOKIE_NAME: z.string().default('app_session'),
   SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(604800), // 7 days
 
   // Root Account Initial Bootstrap (Phase 2)
   INITIAL_ROOT_EMAIL: z.string().email().default('root@example.com'),
-  INITIAL_ROOT_PASSWORD: z.string().min(8).default('RootSecurePass123!'),
+  INITIAL_ROOT_PASSWORD: z.string().min(8).default(DEV_PLACEHOLDERS.INITIAL_ROOT_PASSWORD),
 
   // Observability
   PROMETHEUS_URL: z.string().default('http://localhost:9090'),
 });
 
 export type Env = z.infer<typeof envSchema>;
+
+/**
+ * The variables the production guard checks, derived from {@link DEV_PLACEHOLDERS} so
+ * that changing a placeholder cannot leave the guard checking a stale value.
+ */
+export const INSECURE_DEFAULTS: Record<string, string[]> = Object.fromEntries(
+  Object.entries(DEV_PLACEHOLDERS).map(([key, value]) => [key, [value]])
+);
+
+/**
+ * Refuses to start a production process that is still using development placeholders.
+ *
+ * Throws with every offending variable listed at once, so an operator fixes the whole
+ * set in one pass rather than discovering them one restart at a time.
+ */
+export function assertProductionSecrets(env: Env): void {
+  if (env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const offenders: string[] = [];
+
+  for (const [key, insecureValues] of Object.entries(INSECURE_DEFAULTS)) {
+    const value = (env as unknown as Record<string, unknown>)[key];
+    if (typeof value === 'string' && insecureValues.includes(value)) {
+      offenders.push(`  ${key}: still set to the public default shipped in .env.example`);
+    }
+  }
+
+  if (env.SESSION_SECRET.length < 32) {
+    offenders.push('  SESSION_SECRET: must be at least 32 characters in production');
+  }
+
+  if (offenders.length > 0) {
+    throw new Error(
+      '[Config] Refusing to start in production with insecure configuration:\n' +
+        offenders.join('\n') +
+        '\n\nGenerate fresh values, e.g. `node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64url\'))"`.'
+    );
+  }
+}
 
 let cachedEnv: Env | null = null;
 
@@ -115,6 +184,8 @@ export function getEnv(overrideEnv?: Record<string, unknown>): Env {
     // In test environment, throw descriptive error; in production/development, log and throw
     throw new Error(errorMessage);
   }
+
+  assertProductionSecrets(parsed.data);
 
   if (!overrideEnv) {
     cachedEnv = parsed.data;

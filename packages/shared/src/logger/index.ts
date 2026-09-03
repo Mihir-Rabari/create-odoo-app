@@ -56,7 +56,7 @@ export function createLogger(options: CreateLoggerOptions = {}): Logger {
           type: err.name || 'Error',
           message: err.message,
           stack: isDev ? err.stack : undefined,
-          code: (err as any).code,
+          code: (err as { code?: unknown }).code,
         };
       },
     },

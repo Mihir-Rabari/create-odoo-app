@@ -24,3 +24,19 @@ export const SlugSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must consist of lowercase alphanumeric characters and single hyphens');
 
 export const IsoDateTimeSchema = z.string().datetime({ message: 'Invalid ISO 8601 datetime format' });
+
+/**
+ * Datetime schema for HTTP *responses*.
+ *
+ * Drizzle hands back `Date` instances for timestamp columns, but the wire format is an
+ * ISO 8601 string. This accepts either and always emits the string, so route handlers
+ * can return rows straight from the service without hand-mapping every timestamp — and
+ * without falling back to `z.any()`, which disables response filtering entirely.
+ */
+export const IsoDateTimeOutSchema = z
+  .union([z.string(), z.date()])
+  .transform((value) => (value instanceof Date ? value.toISOString() : value));
+
+export const NullableIsoDateTimeOutSchema = z
+  .union([z.string(), z.date(), z.null()])
+  .transform((value) => (value instanceof Date ? value.toISOString() : value));

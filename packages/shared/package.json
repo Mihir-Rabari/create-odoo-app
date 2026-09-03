@@ -10,12 +10,17 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./crypto": {
+      "types": "./src/crypto/password.ts",
+      "import": "./src/crypto/password.ts",
+      "default": "./src/crypto/password.ts"
     }
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"@packages/shared: lint ok\"",
+    "lint": "eslint src --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {

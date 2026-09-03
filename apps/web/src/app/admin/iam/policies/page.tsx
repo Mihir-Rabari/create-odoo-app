@@ -5,8 +5,9 @@ import { useIamPolicies, useCreatePolicy, useDeletePolicy, useIamPolicy } from '
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileCode2, Plus, Trash2, Shield, AlertCircle, Eye, X } from 'lucide-react';
+import { FileCode2, Plus, Trash2, AlertCircle, Eye, X } from 'lucide-react';
 import type { PolicyStatement } from '@packages/validation';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function PoliciesManagementPage() {
   const { data: policies, isLoading, refetch } = useIamPolicies();
@@ -66,15 +67,14 @@ export default function PoliciesManagementPage() {
       await createPolicyMutation.mutateAsync({
         name,
         description: description || undefined,
-        statements,
-      });
+        statements });
       setName('');
       setDescription('');
       setStatements([{ effect: 'allow', actions: ['users:read'], resources: ['*'] }]);
       setShowCreate(false);
       refetch();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create policy');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create policy'));
     }
   };
 

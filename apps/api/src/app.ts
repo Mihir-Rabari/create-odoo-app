@@ -5,7 +5,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import { createLogger } from './lib/logger.js';
-import { getEnv } from '@packages/config';
+import { getEnv } from '@packages/config/env';
 
 // Plugins
 import configPlugin from './plugins/config.js';
@@ -25,12 +25,36 @@ import { v1Routes } from './routes/v1/index.js';
 
 const SAFE_REQ_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 
+/**
+ * Translates the TRUST_PROXY env value into Fastify's `trustProxy` option.
+ *
+ * "false" (the default) means `request.ip` is the socket address. Behind a proxy that
+ * is always the proxy itself, so operators must opt in explicitly — either with `true`,
+ * a hop count, or, preferably, the CIDR of their own load balancer.
+ */
+function resolveTrustProxy(value: string): boolean | string | string[] {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === '' || normalized === 'false') return false;
+  if (normalized === 'true') return true;
+
+  // A bare integer is a hop count. Fastify forwards it to proxy-addr as a string.
+  const hops = Number(normalized);
+  if (Number.isInteger(hops) && hops > 0) return normalized;
+
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 export function buildApp(options: FastifyServerOptions = {}): FastifyInstance {
   const env = getEnv();
   const logger = createLogger(env.NODE_ENV, env.LOG_LEVEL);
 
-  const app = fastify({
+  const serverOptions: FastifyServerOptions = {
     loggerInstance: logger,
+    trustProxy: resolveTrustProxy(env.TRUST_PROXY),
     genReqId: (req) => {
       const headerReqId = req.headers['x-request-id'];
       if (
@@ -43,7 +67,9 @@ export function buildApp(options: FastifyServerOptions = {}): FastifyInstance {
       return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     },
     ...options,
-  }).withTypeProvider<ZodTypeProvider>();
+  };
+
+  const app = fastify(serverOptions).withTypeProvider<ZodTypeProvider>();
 
   // Ensure x-request-id is always included in response headers for client tracing
   app.addHook('onSend', async (request, reply) => {

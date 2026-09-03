@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { UserPlus, User, Mail, AlertCircle, KeyRound, Shield } from 'lucide-react';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -39,8 +40,8 @@ export default function SignupPage() {
     try {
       await signup({ name, email, password });
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }

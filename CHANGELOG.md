@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+Full security and quality audit remediation.
+
+### Security
+- **Upgraded `drizzle-orm` to `^0.45.2`**, which patches a SQL injection advisory affecting every version below it. The previous `^0.39.3` range could never reach the fix.
+- **Patched three transitive advisories** via `overrides` in `pnpm-workspace.yaml`: `postcss` (path traversal / arbitrary file read, reached through `next`) and `@fastify/static` (route guard and authorization bypass, reached through `@fastify/swagger-ui`). `pnpm audit --prod` now reports zero vulnerabilities, and CI fails on any new one.
+- **Stopped `passwordHash` leaking through the API.** `updateUserStatus` returned an unprojected `users` row and its route declared `200: z.any()`, so Fastify's response serializer stripped nothing. All 14 `z.any()` IAM response schemas are replaced with real ones, and user reads go through a single `SAFE_USER_COLUMNS` projection.
+- **Per-project secrets.** Every generated app previously shipped the same `SESSION_SECRET` and `INITIAL_ROOT_PASSWORD`, both public in `.env.example`. The CLI now mints unique values per project and prints the root password once. The API refuses to start with `NODE_ENV=production` while any published default remains, listing every offender at once.
+- **Policy `resources` and `conditions` are now evaluated.** Both fields existed on `PolicyStatement` and were accepted by the API, but the engine ignored them: a policy scoped to one resource granted the action on all of them. Resource matching supports exact, prefix-wildcard and `*`; conditions support `StringEquals`, `StringNotEquals`, `Bool` and `OwnerEquals`, and fail closed on an unrecognised operator.
+- **`:self` ownership now fails closed.** The check previously ran only when `resourceOwnerId` was supplied, so a route that omitted it skipped the gate entirely.
+- **Blocked privilege escalation through policy attachment.** Holding `policies:update` was enough to attach an `allow *` policy to your own account. Grants are now rejected unless the actor already holds every permission being conferred.
+- **Protected system records.** The `isSystem` flag was set by the seed and enforced nowhere; deleting the default external-user policy silently broke all future signups. System roles, groups and policies are now immutable through the API.
+- **Protected the ROOT identity.** Any holder of `users:update` could suspend the ROOT account and lock the platform out. ROOT suspension and self-suspension are now refused.
+- **Fixed rate limiting behind a proxy.** The limiter allowlisted `127.0.0.1`, which behind nginx, a load balancer or Docker ingress matched every request and disabled rate limiting entirely — including on `/auth/login`. The allowlist is gone and a `TRUST_PROXY` setting configures `request.ip` correctly.
+- **Added per-email login lockout** (`LoginThrottle`), enforcing the previously decorative `AuthConfig.maxLoginAttempts`. Degrades to no-lockout if Redis is unavailable rather than causing an authentication outage.
+- **Closed the login timing oracle.** An unknown email returned before any hashing, making account existence measurable. A dummy scrypt verification now runs on that path.
+- **Hardened Docker Compose.** Services bind to `127.0.0.1` by default instead of `0.0.0.0`; Redis now actually receives `REDIS_PASSWORD`; Grafana anonymous access is off by default and its credentials are configurable; MinIO images are pinned instead of `:latest`.
+- **Scoped the Swagger CSP.** `script-src 'unsafe-inline'` was applied to the entire API to make one HTML page render; it now applies only to `/api/docs`.
+- **Fixed the cross-site session cookie.** `sameSite` was a no-op ternary returning `'lax'` in both branches, silently dropping the session cookie when web and API are on different hosts.
+
+### Fixed
+- Removed 24 committed build artifacts from `packages/config/src`. Vite and Node both resolve a sibling `./x.js` ahead of `./x.ts`, so the stale compiled output was shadowing the TypeScript source at test time. `.gitignore` now prevents recurrence.
+- `create-odoo-app .` no longer overwrites a non-empty current directory, and no longer prints a `cd` step for a directory you are already in.
+- Removed the `--skip-infra` flag, which was parsed and advertised but never used.
+- Generated projects no longer inherit `ignore-scripts` (which permanently suppressed install scripts for the user's own dependencies) or the generator's `repository`, `bugs`, `homepage` and `author` fields.
+- Signup is now transactional; a failed policy attachment previously left an account with no permissions and an unusable email address.
+- The error handler no longer reports unmapped 4xx statuses as `INTERNAL_SERVER_ERROR`, and now surfaces domain error codes such as `PRIVILEGE_ESCALATION_BLOCKED`.
+- `verify:release` no longer fails on Windows checkouts outside `C:` — GNU tar was reading the absolute archive path as a remote `host:path` spec.
+- The seed script shares `hashPassword` with the login path instead of reimplementing scrypt, which would have drifted the moment the parameters were tuned.
+- `@packages/config` no longer re-exports the Node-only env loader from its main entry point, which would break the Next.js client build for anyone following the README's advice to configure the app there. Server code imports `@packages/config/env`.
+
+### Changed
+- **Replaced the placeholder `lint` scripts.** Every package ran `echo "lint ok"`; there was no ESLint config in the repo, so `pnpm verify` and the CI lint step always passed. Real ESLint now runs with `--max-warnings 0`, and the 29 unused imports and `any` annotations it found are fixed.
+- **Tightened vacuous test assertions.** Five tests accepted a range of status codes wide enough to pass whether the endpoint worked or crashed — including the privilege-escalation test, which allowed `[201, 400, 500, 503]`. Database-dependent tests now skip explicitly rather than passing without running.
+- **Added coverage thresholds.** `test:coverage` previously reported numbers nothing acted on. A global floor plus stricter floors on the policy engine (now 100% statements) and password crypto.
+- Test suite grew from 110 to 165 tests.
+- CI now runs a dependency vulnerability audit, and a dedicated Linux job exercises migrations and the seed script against real PostgreSQL and Redis containers.
+- `AuthConfig.registrationEnabled` and `minPasswordLength` are enforced instead of being documented knobs that did nothing.
+- Signup rejects unknown request fields outright (`.strict()`) rather than silently discarding them.
+
 ## [1.0.10] - 2026-09-02
 
 ### Fixed

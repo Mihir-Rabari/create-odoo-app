@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"@app/web: lint ok\"",
+    "lint": "eslint src --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {

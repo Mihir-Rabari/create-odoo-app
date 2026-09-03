@@ -4,24 +4,18 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   useIamUsers,
   useIamRoles,
   useIamGroups,
   useIamPolicies,
-  useIamPermissions,
-} from '@/hooks/use-iam';
+  useIamPermissions } from '@/hooks/use-iam';
 import {
   Users,
-  ShieldCheck,
-  FolderTree,
   FileCode2,
-  Key,
   ArrowRight,
   Shield,
-  CheckCircle2,
-} from 'lucide-react';
+  CheckCircle2 } from 'lucide-react';
 
 export default function AdminOverviewPage() {
   const { data: usersData, isLoading: usersLoading } = useIamUsers({ limit: 1 });

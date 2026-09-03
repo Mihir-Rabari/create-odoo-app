@@ -46,10 +46,14 @@ describe('Fastify Backend Application (@app/api)', () => {
         url: '/health/ready',
       });
 
-      // 200 (all up) or 503 (backing services offline in local test runner without docker)
+      // The readiness probe legitimately depends on whether Postgres, Redis and MinIO
+      // are up, so the status code cannot be pinned. What must always hold is that the
+      // code and the reported status agree — a 200 that says "error", or a 503 that
+      // says "ok", is a real bug and this assertion catches it.
       expect([200, 503]).toContain(response.statusCode);
       const json = response.json();
       expect(['ok', 'degraded', 'error']).toContain(json.status);
+      expect(response.statusCode === 200).toBe(json.status === 'ok');
       expect(json.services).toBeDefined();
       expect(json.services.api).toBe('ok');
     });
@@ -92,8 +96,11 @@ describe('Fastify Backend Application (@app/api)', () => {
         url: '/api/docs',
       });
 
-      // Either 200 or 302/301 redirect to /api/docs/
-      expect([200, 301, 302]).toContain(response.statusCode);
+      // Swagger UI is mounted at the bare path and serves the shell directly; the
+      // redirect variant only applies to /api/docs (no trailing slash) under other
+      // configurations. Pinning it means a routing change is caught rather than absorbed.
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-type']).toContain('text/html');
     });
   });
 

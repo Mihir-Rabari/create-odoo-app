@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hashPassword, verifyPassword } from './password.js';
+import { hashPassword, verifyPassword, verifyPasswordDummy } from './password.js';
 
 describe('Password Cryptography', () => {
   it('should hash and verify passwords correctly', async () => {
@@ -34,5 +34,30 @@ describe('Password Cryptography', () => {
     expect(await verifyPassword('password', 'malformed_hash')).toBe(false);
     expect(await verifyPassword('password', '')).toBe(false);
     expect(await verifyPassword('password', 'bcrypt$invalid$hash')).toBe(false);
+  });
+});
+
+describe('verifyPasswordDummy', () => {
+  it('resolves without throwing for any input', async () => {
+    await expect(verifyPasswordDummy('anything')).resolves.toBeUndefined();
+    await expect(verifyPasswordDummy('')).resolves.toBeUndefined();
+  });
+
+  it('costs roughly the same as a real verification', async () => {
+    // The point of the dummy hash is that "no such account" and "wrong password" take
+    // indistinguishable time. An order-of-magnitude gap would reopen the enumeration
+    // oracle, so the bound is deliberately loose but not vacuous.
+    const realHash = await hashPassword('correct horse battery staple');
+
+    const startReal = performance.now();
+    await verifyPassword('wrong password', realHash);
+    const realMs = performance.now() - startReal;
+
+    const startDummy = performance.now();
+    await verifyPasswordDummy('wrong password');
+    const dummyMs = performance.now() - startDummy;
+
+    expect(dummyMs).toBeGreaterThan(realMs / 10);
+    expect(dummyMs).toBeLessThan(realMs * 10);
   });
 });

@@ -7,6 +7,24 @@ const SALT_BYTES = 16;
 const KEY_BYTES = 64;
 
 /**
+ * A syntactically valid hash of a value nobody can supply.
+ *
+ * Used by `verifyPasswordDummy` to spend the same CPU time as a real verification.
+ */
+const DUMMY_HASH = `scrypt$${'0'.repeat(SALT_BYTES * 2)}$${'0'.repeat(KEY_BYTES * 2)}`;
+
+/**
+ * Performs a throwaway password verification.
+ *
+ * Login must take the same time whether or not the account exists. Returning early on
+ * an unknown email leaks account existence through response latency, which is enough to
+ * enumerate a user list. Call this on the account-not-found path before responding.
+ */
+export async function verifyPasswordDummy(password: string): Promise<void> {
+  await verifyPassword(password, DUMMY_HASH);
+}
+
+/**
  * Securely hashes a plaintext password using scrypt with a unique random salt.
  * Output format: scrypt$<saltHex>$<hashHex>
  */

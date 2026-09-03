@@ -1,6 +1,6 @@
 import { checkDatabaseHealth, closeDatabase } from '@packages/db';
 import { createRedisClient, createStorageClient } from '@packages/shared';
-import { getEnv } from '@packages/config';
+import { getEnv } from '@packages/config/env';
 
 interface CheckResult {
   name: string;

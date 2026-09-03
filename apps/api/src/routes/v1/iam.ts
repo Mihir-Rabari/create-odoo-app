@@ -13,6 +13,13 @@ import {
   AssignRoleSchema,
   HttpErrorResponseSchema,
   EffectivePermissionsResponseSchema,
+  UserResponseSchema,
+  UserDetailResponseSchema,
+  RoleResponseSchema,
+  RoleDetailResponseSchema,
+  GroupResponseSchema,
+  GroupDetailResponseSchema,
+  PolicyResponseSchema,
   UuidSchema,
   type UserListQuery,
   type UpdateUserStatus,
@@ -43,18 +50,9 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         querystring: UserListQuerySchema,
         response: {
           200: z.object({
-            data: z.array(
-              z.object({
-                id: z.string().uuid(),
-                email: z.string().email(),
-                name: z.string(),
-                status: z.string(),
-                identityType: z.string(),
-                lastLoginAt: z.date().nullable(),
-                createdAt: z.date(),
-                updatedAt: z.date(),
-              })
-            ),
+            // Shares UserResponseSchema with the detail endpoints so the two can never
+            // drift, and so timestamps serialize as ISO strings rather than Date objects.
+            data: z.array(UserResponseSchema),
             meta: z.object({
               page: z.number(),
               limit: z.number(),
@@ -86,7 +84,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Users'],
         params: z.object({ id: UuidSchema }),
         response: {
-          200: z.any(),
+          200: UserDetailResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
           404: HttpErrorResponseSchema,
@@ -121,7 +119,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         params: z.object({ id: UuidSchema }),
         body: UpdateUserStatusSchema,
         response: {
-          200: z.any(),
+          200: UserResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
@@ -181,11 +179,11 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
       try {
         const result = await fastify.iamService.getEffectivePermissions(id);
         return reply.status(200).send(result);
-      } catch (err: any) {
+      } catch (err: unknown) {
         return reply.status(404).send({
           statusCode: 404,
           error: 'Not Found',
-          message: err.message || 'User not found',
+          message: err instanceof Error ? err.message : 'User not found',
           code: 'USER_NOT_FOUND',
           requestId: request.id,
           timestamp: new Date().toISOString(),
@@ -348,7 +346,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description: 'List all IAM roles',
         tags: ['IAM - Roles'],
         response: {
-          200: z.array(z.any()),
+          200: z.array(RoleResponseSchema),
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
         },
@@ -370,7 +368,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Roles'],
         body: CreateRoleSchema,
         response: {
-          201: z.any(),
+          201: RoleResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
@@ -394,7 +392,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Roles'],
         params: z.object({ id: UuidSchema }),
         response: {
-          200: z.any(),
+          200: RoleDetailResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
           404: HttpErrorResponseSchema,
@@ -429,7 +427,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         params: z.object({ id: UuidSchema }),
         body: UpdateRoleSchema,
         response: {
-          200: z.any(),
+          200: RoleDetailResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
@@ -502,7 +500,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description: 'List all IAM groups',
         tags: ['IAM - Groups'],
         response: {
-          200: z.array(z.any()),
+          200: z.array(GroupResponseSchema),
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
         },
@@ -524,7 +522,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Groups'],
         body: CreateGroupSchema,
         response: {
-          201: z.any(),
+          201: GroupResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
@@ -548,7 +546,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Groups'],
         params: z.object({ id: UuidSchema }),
         response: {
-          200: z.any(),
+          200: GroupDetailResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
           404: HttpErrorResponseSchema,
@@ -583,7 +581,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         params: z.object({ id: UuidSchema }),
         body: UpdateGroupSchema,
         response: {
-          200: z.any(),
+          200: GroupDetailResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
@@ -656,7 +654,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         description: 'List all IAM policies',
         tags: ['IAM - Policies'],
         response: {
-          200: z.array(z.any()),
+          200: z.array(PolicyResponseSchema),
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
         },
@@ -678,7 +676,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Policies'],
         body: CreatePolicySchema,
         response: {
-          201: z.any(),
+          201: PolicyResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
@@ -702,7 +700,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ['IAM - Policies'],
         params: z.object({ id: UuidSchema }),
         response: {
-          200: z.any(),
+          200: PolicyResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,
           404: HttpErrorResponseSchema,
@@ -737,7 +735,7 @@ export const iamRoutes: FastifyPluginAsyncZod = async (fastify) => {
         params: z.object({ id: UuidSchema }),
         body: UpdatePolicySchema,
         response: {
-          200: z.any(),
+          200: PolicyResponseSchema,
           400: HttpErrorResponseSchema,
           401: HttpErrorResponseSchema,
           403: HttpErrorResponseSchema,

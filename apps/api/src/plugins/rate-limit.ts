@@ -8,7 +8,12 @@ async function rateLimitPlugin(fastify: FastifyInstance) {
   await fastify.register(rateLimit, {
     max: config.security.rateLimitMax,
     timeWindow: config.security.rateLimitTimeWindow,
-    allowList: ['127.0.0.1', 'localhost'],
+    // No loopback allowlist.
+    //
+    // Behind nginx, a cloud load balancer, or Docker ingress, every request arrives from
+    // 127.0.0.1 unless TRUST_PROXY is configured. Allowlisting loopback therefore
+    // switched rate limiting off entirely in exactly the deployments that need it — an
+    // unlimited-attempt path straight to /auth/login.
     errorResponseBuilder: (_req, context) => ({
       statusCode: 429,
       error: 'Too Many Requests',

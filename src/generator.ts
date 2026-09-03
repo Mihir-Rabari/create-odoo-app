@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { copyDirectory, replaceInFile } from './utils/fs.js';
@@ -14,7 +15,6 @@ export interface GeneratorOptions {
   templateDir?: string;
   skipInstall?: boolean;
   skipGit?: boolean;
-  skipInfra?: boolean;
 }
 
 export interface GeneratorResult {
@@ -23,6 +23,8 @@ export interface GeneratorResult {
   humanTitle: string;
   targetDir: string;
   error?: string;
+  /** Per-project secrets written into `.env`, keyed by variable name. */
+  generatedSecrets?: Record<string, string>;
 }
 
 const RESERVED_NAMES = new Set([
@@ -105,6 +107,47 @@ temp/
 *.tmp
 *.tgz
 `;
+
+/**
+ * Environment variables that must be unique per generated project.
+ *
+ * `.env.example` carries public placeholder values so a clone boots against Docker
+ * Compose immediately. Copying those verbatim into a real `.env` would give every
+ * project on npm the same session secret and root password, so each one is replaced
+ * with freshly generated randomness at scaffold time.
+ */
+const GENERATED_SECRETS: Record<string, () => string> = {
+  SESSION_SECRET: () => crypto.randomBytes(48).toString('base64url'),
+  INITIAL_ROOT_PASSWORD: () => `${crypto.randomBytes(18).toString('base64url')}Aa1!`,
+};
+
+/**
+ * Rewrites the secret-bearing lines of an `.env` file with per-project values.
+ * Returns the new contents plus the generated values, so the CLI can show the
+ * root password once — it is not recoverable from the hash afterwards.
+ */
+export function applyGeneratedSecrets(envContents: string): {
+  contents: string;
+  generated: Record<string, string>;
+} {
+  const generated: Record<string, string> = {};
+  let contents = envContents;
+
+  for (const [key, generate] of Object.entries(GENERATED_SECRETS)) {
+    const value = generate();
+    const pattern = new RegExp(`^${key}=.*$`, 'm');
+
+    if (pattern.test(contents)) {
+      contents = contents.replace(pattern, `${key}=${value}`);
+    } else {
+      contents = `${contents.replace(/\s*$/, '')}\n${key}=${value}\n`;
+    }
+
+    generated[key] = value;
+  }
+
+  return { contents, generated };
+}
 
 /**
  * Validates the requested project name against npm naming rules and path security.
@@ -209,18 +252,29 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
   logger.info(`Creating a new full-stack application in ${targetDir}...`);
 
   // 3. Prepare Target Directory
-  if (fs.existsSync(targetDir) && rawName !== '.') {
-    const existingFiles = await fs.promises.readdir(targetDir);
+  //
+  // The emptiness check applies to `.` as well. Previously it was skipped for the
+  // current-directory case, so running the generator in a directory that already held
+  // work would overwrite files in place with no warning and nothing to undo it.
+  if (fs.existsSync(targetDir)) {
+    const existingFiles = (await fs.promises.readdir(targetDir)).filter(
+      // A bare `git init`ed directory is a reasonable starting point.
+      (entry) => entry !== '.git'
+    );
+
     if (existingFiles.length > 0) {
       return {
         success: false,
         projectName: packageName,
         humanTitle,
         targetDir,
-        error: `Target directory "${targetDir}" already exists and is not empty.`,
+        error:
+          rawName === '.'
+            ? `The current directory "${targetDir}" is not empty. Scaffolding here would overwrite existing files.`
+            : `Target directory "${targetDir}" already exists and is not empty.`,
       };
     }
-  } else if (!fs.existsSync(targetDir)) {
+  } else {
     await fs.promises.mkdir(targetDir, { recursive: true });
   }
 
@@ -238,8 +292,12 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
   logger.step(3, 6, 'Creating local environment template & .gitignore...');
   const envExamplePath = path.join(targetDir, '.env.example');
   const envPath = path.join(targetDir, '.env');
+  let generatedSecrets: Record<string, string> = {};
   if (fs.existsSync(envExamplePath) && !fs.existsSync(envPath)) {
-    await fs.promises.copyFile(envExamplePath, envPath);
+    const template = await fs.promises.readFile(envExamplePath, 'utf-8');
+    const { contents, generated } = applyGeneratedSecrets(template);
+    generatedSecrets = generated;
+    await fs.promises.writeFile(envPath, contents, 'utf-8');
   }
 
   // Ensure preconfigured .gitignore is always present in generated application
@@ -251,6 +309,7 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
   if (fs.existsSync(npmignorePath)) {
     await fs.promises.unlink(npmignorePath);
   }
+
 
   logger.success('Environment & .gitignore configured (.env.example, .env, .gitignore).');
 
@@ -271,7 +330,11 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
   if (!skipInstall) {
     logger.step(5, 6, 'Installing dependencies with pnpm...');
     try {
-      execSync('pnpm install --ignore-scripts', { cwd: targetDir, stdio: 'inherit' });
+      // No --ignore-scripts: pnpm blocks postinstall scripts by default and runs them
+      // only for the packages listed under `onlyBuiltDependencies` in
+      // pnpm-workspace.yaml. Skipping them outright would leave the Next.js SWC binary
+      // and esbuild unbuilt, so `pnpm dev` would fail immediately after scaffolding.
+      execSync('pnpm install', { cwd: targetDir, stdio: 'inherit' });
       logger.success('Dependencies installed successfully.');
     } catch {
       logger.warn('pnpm install failed or pnpm not installed. Please run "pnpm install" manually.');
@@ -288,6 +351,7 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
     projectName: packageName,
     humanTitle,
     targetDir,
+    generatedSecrets,
   };
 }
 
@@ -307,9 +371,20 @@ export async function transformProjectMetadata(
 
     pkg.name = packageName;
     pkg.description = `${humanTitle} - Full-Stack Monorepo Application`;
+    pkg.version = '0.1.0';
+    pkg.private = true;
+
     // Remove generator-specific binary & publish entries from generated project
     delete pkg.bin;
     delete pkg.files;
+
+    // Strip the generator's own identity. Left in place, every scaffolded application
+    // would point its issue tracker, homepage and authorship at this repository.
+    delete pkg.repository;
+    delete pkg.bugs;
+    delete pkg.homepage;
+    delete pkg.author;
+    delete pkg.license;
     delete pkg.scripts['build:cli'];
     delete pkg.scripts['verify:release'];
     delete pkg.scripts['release:check'];
@@ -386,8 +461,8 @@ A full-stack application built with Next.js (App Router), Fastify, PostgreSQL (D
 ## 1. Quick Start
 
 ### Prerequisites
-* **Node.js**: \`v20.x\` or \`v22.x\` / \`v24.x\`
-* **pnpm**: \`v10.x\` or \`v11.x\`
+* **Node.js**: \`>=22.13.0\` (matches the \`engines\` field in package.json)
+* **pnpm**: \`>=11.1.0\`
 * **Docker & Docker Compose**: v2.x+ running on host
 
 ### Getting Started
@@ -406,6 +481,26 @@ pnpm db:seed
 # 4. Start development servers
 pnpm dev
 \`\`\`
+
+Your root account credentials were generated during scaffolding and written to
+\`.env\` as \`INITIAL_ROOT_EMAIL\` / \`INITIAL_ROOT_PASSWORD\`. \`pnpm db:seed\` uses them to
+bootstrap the ROOT identity.
+
+---
+
+## 1a. Before Deploying
+
+\`.env\` is generated with a unique \`SESSION_SECRET\` and root password, but the
+infrastructure credentials are still development defaults. The API refuses to start with
+\`NODE_ENV=production\` while any of them remain, and will list exactly what to change.
+
+* Replace \`DATABASE_PASSWORD\`, \`S3_ACCESS_KEY\`, \`S3_SECRET_KEY\` and set \`REDIS_PASSWORD\`.
+* Set \`TRUST_PROXY\` if the API runs behind nginx, a load balancer, or Docker ingress.
+  Leaving it unset makes every request appear to come from the proxy, which disables
+  per-IP rate limiting.
+* Set \`NEXT_PUBLIC_API_URL\` to the API origin the browser can reach.
+* \`BIND_ADDRESS\` defaults to \`127.0.0.1\` so Docker services are not exposed to the
+  network. Change it only deliberately.
 
 ---
 

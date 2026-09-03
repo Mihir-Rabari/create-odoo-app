@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Layers, FolderTree, ShieldCheck, Terminal, Cpu } from 'lucide-react';
+import { Layers, Terminal } from 'lucide-react';
 
 export function ArchitectureOverview() {
   const packages = [
@@ -9,32 +9,27 @@ export function ArchitectureOverview() {
       name: '@packages/config',
       path: 'packages/config',
       desc: 'Application configuration constants & typed Zod runtime environment parsing.',
-      tags: ['Zod', 'dotenv'],
-    },
+      tags: ['Zod', 'dotenv'] },
     {
       name: '@packages/validation',
       path: 'packages/validation',
       desc: 'Reusable request/response validation schemas, pagination, and standardized HTTP error structures.',
-      tags: ['Zod', 'HTTP Errors'],
-    },
+      tags: ['Zod', 'HTTP Errors'] },
     {
       name: '@packages/shared',
       path: 'packages/shared',
       desc: 'Redis client abstraction (ioredis) & S3-compatible storage service (@aws-sdk/client-s3).',
-      tags: ['Redis', 'S3 / MinIO'],
-    },
+      tags: ['Redis', 'S3 / MinIO'] },
     {
       name: '@packages/db',
       path: 'packages/db',
       desc: 'PostgreSQL connection pooling, Drizzle ORM schemas, migration runner, and deterministic seeds.',
-      tags: ['Drizzle ORM', 'PostgreSQL'],
-    },
+      tags: ['Drizzle ORM', 'PostgreSQL'] },
     {
       name: '@packages/openapi',
       path: 'packages/openapi',
       desc: 'OpenAPI 3.0 specification builder, tag taxonomy, and documentation metadata generators.',
-      tags: ['OpenAPI 3.0', 'Swagger'],
-    },
+      tags: ['OpenAPI 3.0', 'Swagger'] },
   ];
 
   return (

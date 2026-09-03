@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "lint": "echo \"@packages/iam: lint ok\"",
+    "lint": "eslint src --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {
@@ -24,7 +24,7 @@
     "@packages/db": "workspace:*",
     "@packages/shared": "workspace:*",
     "@packages/validation": "workspace:*",
-    "drizzle-orm": "^0.39.3",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.2.1",
     "zod": "^3.24.2"
   },

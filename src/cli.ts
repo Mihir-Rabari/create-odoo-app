@@ -33,7 +33,6 @@ Usage:
 Options:
   --skip-install    Skip installing dependencies with pnpm
   --skip-git        Skip initializing a new Git repository
-  --skip-infra      Skip starting Docker infrastructure
   -h, --help        Display this help message
   -v, --version     Display package version
 
@@ -61,7 +60,6 @@ async function main(): Promise<void> {
   let projectName = '';
   const skipInstall = args.includes('--skip-install');
   const skipGit = args.includes('--skip-git');
-  const skipInfra = args.includes('--skip-infra');
 
   for (const arg of args) {
     if (!arg.startsWith('-') && !projectName) {
@@ -88,7 +86,6 @@ async function main(): Promise<void> {
       projectName,
       skipInstall,
       skipGit,
-      skipInfra,
       templateDir: path.resolve(__dirname, '..'),
     });
 
@@ -97,19 +94,33 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
+    // When scaffolding into the current directory there is nothing to cd into.
+    const cdStep = projectName === '.' ? '' : `  \x1b[36mcd ${result.projectName}\x1b[0m\n`;
+
     console.log(`
 \x1b[32m✔ Project created successfully!\x1b[0m
 
 Next steps:
 
-  \x1b[36mcd ${result.projectName === '.' ? '.' : result.projectName}\x1b[0m
-  ${skipInstall ? '\x1b[36mpnpm install\x1b[0m\n  ' : ''}\x1b[36mpnpm infra:up\x1b[0m
+${cdStep}${skipInstall ? '  \x1b[36mpnpm install\x1b[0m\n' : ''}  \x1b[36mpnpm infra:up\x1b[0m
   \x1b[36mpnpm db:migrate\x1b[0m
   \x1b[36mpnpm db:seed\x1b[0m
   \x1b[36mpnpm dev\x1b[0m
 `);
-  } catch (err: any) {
-    logger.error(`Generation failed: ${err.message || String(err)}`);
+
+    const rootPassword = result.generatedSecrets?.INITIAL_ROOT_PASSWORD;
+    if (rootPassword) {
+      console.log(`\x1b[33m⚠ Save these now — they are written to .env and shown only once:\x1b[0m
+
+  Root account:  \x1b[1m${process.env.INITIAL_ROOT_EMAIL || 'root@example.com'}\x1b[0m
+  Root password: \x1b[1m${rootPassword}\x1b[0m
+
+  A unique SESSION_SECRET was generated for this project as well.
+  .env is git-ignored; keep it out of version control.
+`);
+    }
+  } catch (err: unknown) {
+    logger.error(`Generation failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }

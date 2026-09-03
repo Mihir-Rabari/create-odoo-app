@@ -32,9 +32,21 @@ export const AuthConfig = {
   minPasswordLength: 8,
 
   /**
-   * Maximum failed login attempts before temporary lockout consideration.
+   * Maximum failed login attempts for a single email before the account is locked out.
+   * Enforced by LoginThrottle on POST /api/v1/auth/login.
    */
   maxLoginAttempts: 5,
+
+  /**
+   * How long a lockout lasts once `maxLoginAttempts` is reached, in seconds.
+   */
+  lockoutSeconds: 15 * 60,
+
+  /**
+   * Rolling window over which failed login attempts accumulate, in seconds.
+   * Attempts older than this expire and no longer count toward a lockout.
+   */
+  loginAttemptWindowSeconds: 15 * 60,
 } as const;
 
 export type AuthConfigType = typeof AuthConfig;

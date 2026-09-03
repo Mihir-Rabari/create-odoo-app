@@ -88,7 +88,16 @@ async function verifyRelease(): Promise<void> {
 
     // 6. Extract tarball into temp directory
     console.log(`[Release Gate] 📂 Step 5: Unpacking tarball in ${tempDir}...`);
-    execSync(`tar -xzf "${tarballPath}" -C "${tempDir}"`, { stdio: 'ignore' });
+    // The archive is passed as a bare filename with cwd set to its directory, rather
+    // than as an absolute path. GNU tar (which is what ships with Git for Windows)
+    // treats an argument containing a colon as a remote `host:path` specification, so an
+    // absolute Windows path fails with "Cannot connect to \K: resolve failed" for anyone
+    // whose checkout is not on C:. Only the archive argument is parsed that way, so -C
+    // can stay absolute.
+    execSync(`tar -xzf "${tarballName}" -C "${tempDir}"`, {
+      cwd: path.dirname(tarballPath),
+      stdio: 'ignore',
+    });
 
     const packageRoot = path.join(tempDir, 'package');
     if (!fs.existsSync(packageRoot)) {

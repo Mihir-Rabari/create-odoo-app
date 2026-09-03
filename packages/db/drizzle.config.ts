@@ -1,5 +1,5 @@
 import { defineConfig } from 'drizzle-kit';
-import { getEnv } from '@packages/config';
+import { getEnv } from '@packages/config/env';
 
 const env = getEnv();
 

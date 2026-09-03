@@ -169,3 +169,304 @@ describe('Policy Engine & Pattern Matching', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Resource scoping and conditions
+//
+// Both fields existed on PolicyStatement and were accepted by the API, but the engine
+// ignored them entirely: a statement scoped to one resource granted the action on all
+// of them. These cover the fix.
+// ---------------------------------------------------------------------------
+describe('PolicyEngine resource scoping', () => {
+  const identity: IdentitySubject = {
+    id: '11111111-1111-1111-1111-111111111111',
+    email: 'user@example.com',
+    identityType: 'EXTERNAL_USER',
+    status: 'ACTIVE',
+  };
+
+  const scoped: PolicyStatement[] = [
+    { effect: 'allow', actions: ['docs:read'], resources: ['docs:alpha'] },
+  ];
+
+  it('allows the action on the resource the statement names', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'docs:read',
+      statements: scoped,
+      context: { resourceId: 'docs:alpha' },
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('denies the same action on a different resource', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'docs:read',
+      statements: scoped,
+      context: { resourceId: 'docs:beta' },
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('denies when no resource context is supplied at all', () => {
+    // Fail closed: a caller that forgets the resource must not receive a blanket grant.
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'docs:read',
+      statements: scoped,
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('honours a resource prefix wildcard', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'docs:read',
+      statements: [{ effect: 'allow', actions: ['docs:read'], resources: ['docs:*'] }],
+      context: { resourceId: 'docs:anything' },
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('keeps deny precedence within the matching resource scope', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'docs:read',
+      statements: [
+        { effect: 'allow', actions: ['*'], resources: ['*'] },
+        { effect: 'deny', actions: ['docs:read'], resources: ['docs:secret'] },
+      ],
+      context: { resourceId: 'docs:secret' },
+    });
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toMatch(/deny/i);
+  });
+});
+
+describe('PolicyEngine conditions', () => {
+  const identity: IdentitySubject = {
+    id: '11111111-1111-1111-1111-111111111111',
+    email: 'user@example.com',
+    identityType: 'EXTERNAL_USER',
+    status: 'ACTIVE',
+  };
+
+  it('allows when a StringEquals condition is satisfied', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'reports:read',
+      statements: [
+        {
+          effect: 'allow',
+          actions: ['reports:read'],
+          resources: ['*'],
+          conditions: { StringEquals: { department: 'finance' } },
+        },
+      ],
+      context: { attributes: { department: 'finance' } },
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('denies when a StringEquals condition is not satisfied', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'reports:read',
+      statements: [
+        {
+          effect: 'allow',
+          actions: ['reports:read'],
+          resources: ['*'],
+          conditions: { StringEquals: { department: 'finance' } },
+        },
+      ],
+      context: { attributes: { department: 'sales' } },
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('denies on an unrecognised condition operator', () => {
+    // Unknown means unsafe: an operator the engine cannot evaluate must not be skipped.
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'reports:read',
+      statements: [
+        {
+          effect: 'allow',
+          actions: ['reports:read'],
+          resources: ['*'],
+          conditions: { IpAddressInRange: { sourceIp: '10.0.0.0/8' } },
+        },
+      ],
+      context: { attributes: {} },
+    });
+    expect(decision.allowed).toBe(false);
+  });
+});
+
+describe('PolicyEngine self-ownership', () => {
+  const identity: IdentitySubject = {
+    id: 'owner-id',
+    email: 'user@example.com',
+    identityType: 'EXTERNAL_USER',
+    status: 'ACTIVE',
+  };
+
+  const selfPolicy: PolicyStatement[] = [
+    { effect: 'allow', actions: ['profile:update:self'], resources: ['*'] },
+  ];
+
+  it('allows a :self action on the caller’s own record', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'profile:update:self',
+      statements: selfPolicy,
+      context: { resourceOwnerId: 'owner-id' },
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('denies a :self action on somebody else’s record', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'profile:update:self',
+      statements: selfPolicy,
+      context: { resourceOwnerId: 'another-user' },
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('denies a :self action when ownership context is missing', () => {
+    // Previously this passed: the ownership check only ran when resourceOwnerId was
+    // present, so omitting it skipped the gate entirely.
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'profile:update:self',
+      statements: selfPolicy,
+    });
+    expect(decision.allowed).toBe(false);
+  });
+});
+
+describe('PolicyEngine coverage of remaining branches', () => {
+  const identity: IdentitySubject = {
+    id: 'user-id',
+    email: 'user@example.com',
+    identityType: 'EXTERNAL_USER',
+    status: 'ACTIVE',
+  };
+
+  it('skips deny statements when scanning for an allow', () => {
+    // A deny that does not match the requested action must not short-circuit the allow
+    // scan, and must not itself be mistaken for a grant.
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'users:read',
+      statements: [
+        { effect: 'deny', actions: ['billing:write'], resources: ['*'] },
+        { effect: 'allow', actions: ['users:read'], resources: ['*'] },
+      ],
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('falls through to implicit deny when only non-matching allows exist', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'users:delete',
+      statements: [{ effect: 'allow', actions: ['users:read'], resources: ['*'] }],
+    });
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toMatch(/implicit deny/i);
+  });
+
+  it('treats a statement with no resources array as unscoped', () => {
+    // Statements can reach the engine from sources that bypass Zod parsing, where the
+    // schema default of ['*'] has not been applied.
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'users:read',
+      statements: [
+        { effect: 'allow', actions: ['users:read'] } as unknown as PolicyStatement,
+      ],
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('grants a ROOT identity the entire catalog', () => {
+    const root: IdentitySubject = { ...identity, identityType: 'ROOT' };
+    const effective = PolicyEngine.computeEffectivePermissions(root, []);
+
+    expect(effective).toContain('users:delete');
+    expect(effective).toContain('admin:access');
+    expect(effective.length).toBeGreaterThan(0);
+  });
+
+  it('denies suspended and disabled identities regardless of policy', () => {
+    const wideOpen: PolicyStatement[] = [
+      { effect: 'allow', actions: ['*'], resources: ['*'] },
+    ];
+
+    expect(
+      PolicyEngine.evaluate({
+        identity: { ...identity, status: 'SUSPENDED' },
+        action: 'users:read',
+        statements: wideOpen,
+      }).allowed
+    ).toBe(false);
+
+    expect(
+      PolicyEngine.evaluate({
+        identity: { ...identity, status: 'DISABLED' },
+        action: 'users:read',
+        statements: wideOpen,
+      }).allowed
+    ).toBe(false);
+  });
+
+  it('evaluates an empty conditions object as satisfied', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'users:read',
+      statements: [
+        { effect: 'allow', actions: ['users:read'], resources: ['*'], conditions: {} },
+      ],
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it('denies when a condition operand is not an object', () => {
+    const decision = PolicyEngine.evaluate({
+      identity,
+      action: 'users:read',
+      statements: [
+        {
+          effect: 'allow',
+          actions: ['users:read'],
+          resources: ['*'],
+          conditions: { StringEquals: 'not-an-object' },
+        } as unknown as PolicyStatement,
+      ],
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('supports Bool and StringNotEquals and OwnerEquals operators', () => {
+    const evaluateWith = (conditions: Record<string, unknown>, attributes: Record<string, unknown>) =>
+      PolicyEngine.evaluate({
+        identity,
+        action: 'users:read',
+        statements: [{ effect: 'allow', actions: ['users:read'], resources: ['*'], conditions }],
+        context: { attributes, resourceOwnerId: 'user-id' },
+      }).allowed;
+
+    expect(evaluateWith({ Bool: { mfaPresent: true } }, { mfaPresent: true })).toBe(true);
+    expect(evaluateWith({ Bool: { mfaPresent: true } }, { mfaPresent: false })).toBe(false);
+
+    expect(evaluateWith({ StringNotEquals: { tier: 'trial' } }, { tier: 'paid' })).toBe(true);
+    expect(evaluateWith({ StringNotEquals: { tier: 'trial' } }, { tier: 'trial' })).toBe(false);
+
+    expect(evaluateWith({ OwnerEquals: { resourceOwnerId: '@identity' } }, {})).toBe(true);
+  });
+});

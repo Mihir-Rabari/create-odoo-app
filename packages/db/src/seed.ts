@@ -11,17 +11,12 @@ import {
 } from './schema/index.js';
 import { eq, sql } from 'drizzle-orm';
 import { fileURLToPath } from 'node:url';
-import crypto from 'node:crypto';
-import { promisify } from 'node:util';
-import { getEnv, AppConfig } from '@packages/config';
-
-const scryptAsync = promisify(crypto.scrypt);
-
-async function hashPasswordLocal(password: string): Promise<string> {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `scrypt$${salt}$${derivedKey.toString('hex')}`;
-}
+import { AppConfig } from '@packages/config';
+import { getEnv } from '@packages/config/env';
+// Shared with the login path rather than reimplemented here. A local copy of the scrypt
+// parameters would drift the moment they are tuned, and the seeded ROOT account would
+// silently stop being able to authenticate.
+import { hashPassword } from '@packages/shared/crypto';
 
 const BASELINE_PERMISSIONS = [
   // Users
@@ -216,7 +211,7 @@ export async function runSeeds(): Promise<void> {
     if (!existingRoot) {
       const rootEmail = env.INITIAL_ROOT_EMAIL.toLowerCase().trim();
       const rootPassword = env.INITIAL_ROOT_PASSWORD;
-      const rootPasswordHash = await hashPasswordLocal(rootPassword);
+      const rootPasswordHash = await hashPassword(rootPassword);
 
       const [newRoot] = await db
         .insert(users)
