@@ -4,6 +4,7 @@ import React from 'react';
 import { useIamPermissions } from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Key, Shield } from 'lucide-react';
 import type { Permission } from '@packages/validation';
 
@@ -35,17 +36,18 @@ export default function PermissionsCatalogPage() {
       </div>
 
       {isLoading ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">
-          Loading permission catalog...
+        <div className="space-y-4">
+          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl" />
         </div>
       ) : Object.keys(grouped).length === 0 ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">
+        <div className="p-12 text-center text-sm text-muted-foreground">
           No permissions registered in catalog.
         </div>
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([namespace, perms]) => (
-            <Card key={namespace}>
+            <Card key={namespace} className="border-border shadow-sm">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base uppercase tracking-wider font-mono text-primary flex items-center gap-2">
@@ -63,10 +65,10 @@ export default function PermissionsCatalogPage() {
                   {perms.map((p) => (
                     <div
                       key={p.id}
-                      className="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1"
+                      className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 hover:bg-muted/30 px-2 rounded-md transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <code className="font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">
+                        <code className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded border">
                           {p.id}
                         </code>
                         {p.isSystem && (

@@ -7,9 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.1.0] - 2026-09-03
 
-Full security and quality audit remediation.
+### Added
+- **Interactive CLI Setup (`@clack/prompts`)**:
+  - Beautiful, accessible terminal prompts when running `npx create-odoo-app <dir>` without `-y` / `--yes`.
+  - Configurable project name, color palette theme (`neutral`, `zinc`, `violet`, `rose`), architecture modules (IAM Governance, Prometheus Observability, S3/MinIO Object Storage), Git initialization, and automated dependency installation.
+  - Automatic non-interactive fallback for CI / scripting workflows with `-y` or non-TTY environments.
+- **Modern shadcn/ui Component Suite in `apps/web`**:
+  - Integrated Radix UI primitives: `@radix-ui/react-avatar`, `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-label`, `@radix-ui/react-select`, `@radix-ui/react-separator`, `@radix-ui/react-slot`, `@radix-ui/react-switch`, `@radix-ui/react-tabs`, `@radix-ui/react-tooltip`.
+  - Built comprehensive, modular UI components in `apps/web/src/components/ui/` (`Button`, `Card`, `Input`, `Label`, `Badge`, `Dialog`, `DropdownMenu`, `Tabs`, `Table`, `Avatar`, `Switch`, `Select`, `Separator`, `Skeleton`, `Alert`, `Tooltip`, `Toaster`, `ThemeToggle`).
+  - Integrated `next-themes` for seamless Dark / Light / System mode switching.
+  - Integrated `sonner` for rich, animated toast notifications across all user actions.
+- **Modernized User Interface & Design System**:
+  - Redesigned Landing page (`apps/web/src/app/page.tsx`) with dynamic architecture visualizers, live system status probes, and hero actions.
+  - Redesigned Authentication pages (`/login`, `/signup`) with cryptographic session badges and developer credentials prefilling.
+  - Redesigned User Dashboard (`/dashboard`) and Profile (`/profile`) with avatar initials, live effective IAM permission badges, and secure password updates.
+  - Redesigned IAM Admin Console (`/admin`, `/admin/iam/*`) with modern Data Tables, interactive status toggles, granular policy statement inspectors, and group/role managers.
+- **Modernized Agent Skills**:
+  - Updated `skills/frontend/SKILL.md` with shadcn/ui component documentation, Radix primitives, and UI testing patterns.
+  - Verified and packaged all 14 Agent Skills into deterministic ZIP archives in `dist/skills/`.
+
 
 ### Security
 - **Upgraded `drizzle-orm` to `^0.45.2`**, which patches a SQL injection advisory affecting every version below it. The previous `^0.39.3` range could never reach the fix.
