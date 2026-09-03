@@ -15,6 +15,16 @@ export default defineConfig({
     },
     include: ['**/*.test.ts', '**/*.spec.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**'],
+    // Vitest defaults to 5s, which is too tight for the suites that copy the whole
+    // template tree or pack 14 skill bundles. Those comfortably fit on Linux and on a
+    // developer machine, then intermittently blow the budget on a Windows CI runner,
+    // where filesystem calls are markedly slower. A green suite that fails once a week
+    // on timing alone teaches people to re-run CI rather than read it.
+    // The one genuinely slow hook — scaffolding the template tree in generator.test.ts —
+    // sets its own budget inline, so the global stays tight enough that a hung hook
+    // still fails fast.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'json', 'html'],

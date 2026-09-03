@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -79,15 +79,25 @@ describe('Generator Unit Tests', () => {
       }
     });
 
-    it('should generate a complete, valid application without machine path leaks', async () => {
-      const result = await generateProject({
+    // Scaffolded once for the whole block rather than inside the first test.
+    //
+    // Copying the template tree is slow enough on a Windows CI runner to exceed the
+    // default 5s test timeout, and when it did, every later test in this block failed
+    // with a confusing ENOENT on .env rather than one clear timeout. Setup now owns both
+    // the work and the generous timeout; the tests below only make assertions.
+    let result: Awaited<ReturnType<typeof generateProject>>;
+
+    beforeAll(async () => {
+      result = await generateProject({
         projectName: 'acme-portal',
         targetDir: testAppDir,
         templateDir: path.resolve(__dirname, '..'),
         skipInstall: true,
         skipGit: true,
       });
+    }, 180_000);
 
+    it('should generate a complete, valid application without machine path leaks', async () => {
       expect(result.success).toBe(true);
       expect(result.projectName).toBe('acme-portal');
       expect(result.humanTitle).toBe('Acme Portal');
