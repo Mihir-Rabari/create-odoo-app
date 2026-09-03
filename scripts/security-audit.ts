@@ -13,6 +13,32 @@ interface SecurityViolation {
   description: string;
 }
 
+/**
+ * Compiled output committed beside its TypeScript source shadows the source
+ * at module-resolution time: both Vite and Node prefer a sibling `./x.js`
+ * (or the `.d.ts` / `.js.map` / `.d.ts.map` that ships alongside it) over
+ * the real `./x.ts`. This previously caused a confusing test failure where
+ * a stale compiled `.js` was silently imported instead of the current
+ * `.ts`. Detect any such tracked files under packages/*\/src so they can
+ * never be re-introduced (e.g. via `git add -f`, which bypasses .gitignore).
+ */
+export const COMPILED_OUTPUT_BESIDE_SOURCE_PATTERN = /^packages\/[^/]+\/src\/.*\.(js|d\.ts|js\.map|d\.ts\.map)$/;
+
+export function findCompiledOutputShadowingSource(trackedFiles: string[]): string[] {
+  return trackedFiles.filter((f) => COMPILED_OUTPUT_BESIDE_SOURCE_PATTERN.test(f.replace(/\\/g, '/')));
+}
+
+/**
+ * The root package.json's `files` array controls what actually ships to
+ * npm. If it explicitly lists compiled artifacts under packages/*\/src
+ * (rather than the .ts source itself, or the directory as a whole), those
+ * artifacts would be published even though they should never exist there
+ * in the first place.
+ */
+export function findCompiledOutputInPackageFilesArray(files: string[]): string[] {
+  return files.filter((f) => COMPILED_OUTPUT_BESIDE_SOURCE_PATTERN.test(f.replace(/\\/g, '/')));
+}
+
 const SECRET_PATTERNS: { category: string; regex: RegExp; description: string }[] = [
   { category: 'OpenAI Secret Key', regex: /\bsk-[a-zA-Z0-9]{20,}\b/, description: 'Detected potential OpenAI API key' },
   { category: 'GitHub Token', regex: /\b(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{50,})\b/, description: 'Detected GitHub personal access token' },
@@ -121,6 +147,37 @@ export async function runSecurityAudit(): Promise<void> {
           description: `Missing required ignore pattern: ${req}`,
         });
       }
+    }
+  }
+
+  // 4. Audit for compiled output committed beside TypeScript source
+  const shadowedFiles = findCompiledOutputShadowingSource(trackedFiles);
+  for (const relPath of shadowedFiles) {
+    violations.push({
+      file: relPath,
+      category: 'Compiled Output Shadows Source',
+      description:
+        'Compiled output committed beside its .ts source shadows the TypeScript at module-resolution time ' +
+        '(both Vite and Node prefer a sibling ./x.js over ./x.ts). Delete this file; it must only be produced ' +
+        'by the build step and never committed.',
+    });
+  }
+
+  // 5. Audit root package.json's `files` array for the same compiled artifacts,
+  // since anything listed there ships to npm.
+  const rootPackageJsonPath = path.join(rootDir, 'package.json');
+  if (fs.existsSync(rootPackageJsonPath)) {
+    const rootPackageJson = JSON.parse(await fs.promises.readFile(rootPackageJsonPath, 'utf-8'));
+    const filesArray: string[] = Array.isArray(rootPackageJson.files) ? rootPackageJson.files : [];
+    const shadowedInFilesArray = findCompiledOutputInPackageFilesArray(filesArray);
+    for (const entry of shadowedInFilesArray) {
+      violations.push({
+        file: 'package.json',
+        category: 'Compiled Output In Published Files Array',
+        description:
+          `The "files" array lists "${entry}", which would ship compiled output alongside the .ts source ` +
+          'to npm consumers. Remove it; only the .ts source (or the whole src directory) should be listed.',
+      });
     }
   }
 
