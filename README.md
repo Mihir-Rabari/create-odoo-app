@@ -40,6 +40,7 @@ npx create-odoo-app@latest . [options]
 | :--- | :--- |
 | `--skip-install` | Skip automatic dependency installation with `pnpm` |
 | `--skip-git` | Skip initializing a new Git repository |
+| `--with-infra` | Opt in to running `docker compose up -d` after dependencies are installed. Automatically skipped when `--skip-install` is passed. If Docker is missing or the daemon isn't running, scaffolding still succeeds and a warning is printed instead. |
 | `-h, --help` | Display CLI help message |
 | `-v, --version` | Display generator package version |
 

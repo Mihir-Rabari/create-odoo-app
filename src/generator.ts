@@ -15,6 +15,7 @@ export interface GeneratorOptions {
   templateDir?: string;
   skipInstall?: boolean;
   skipGit?: boolean;
+  withInfra?: boolean;
 }
 
 export interface GeneratorResult {
@@ -25,6 +26,8 @@ export interface GeneratorResult {
   error?: string;
   /** Per-project secrets written into `.env`, keyed by variable name. */
   generatedSecrets?: Record<string, string>;
+  /** True when `docker compose up -d` was run and succeeded (only possible with --with-infra). */
+  infraStarted?: boolean;
 }
 
 const RESERVED_NAMES = new Set([
@@ -221,6 +224,7 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
     projectName: rawName,
     skipInstall = false,
     skipGit = false,
+    withInfra = false,
   } = options;
 
   // 1. Validate Project Name
@@ -343,6 +347,28 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
     logger.info('Skipping dependency installation (--skip-install).');
   }
 
+  // 9. Start Docker Compose infrastructure (optional, opt-in)
+  //
+  // Only attempted when dependencies were actually installed: without them, the
+  // docker-compose.yml env wiring / dependent tooling may not be ready. Failures here
+  // are never fatal — a working scaffold with a warning is strictly better than
+  // reporting failure for a project that was otherwise generated successfully.
+  let infraStarted = false;
+  if (withInfra && !skipInstall) {
+    logger.info('Starting local infrastructure with Docker Compose (--with-infra)...');
+    try {
+      execSync('docker compose up -d', { cwd: targetDir, stdio: 'inherit' });
+      logger.success('Docker Compose infrastructure started.');
+      infraStarted = true;
+    } catch {
+      logger.warn(
+        'Could not start Docker Compose infrastructure (Docker not installed, daemon not running, or command failed). Run "pnpm infra:up" manually once Docker is available.'
+      );
+    }
+  } else if (withInfra && skipInstall) {
+    logger.info('Skipping Docker Compose startup because dependencies were not installed (--skip-install).');
+  }
+
   logger.step(6, 6, 'Finalizing application structure...');
   logger.success(`Project ${humanTitle} is ready!`);
 
@@ -352,6 +378,7 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
     humanTitle,
     targetDir,
     generatedSecrets,
+    infraStarted,
   };
 }
 
