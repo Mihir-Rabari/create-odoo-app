@@ -24,7 +24,12 @@ export default defineConfig({
     // (API, packages) is server-side code that runs faster and more realistically under
     // plain node, so only apps/web opts into jsdom rather than flipping it globally.
     environmentMatchGlobs: [['apps/web/**', 'jsdom']],
-    setupFiles: ['./apps/web/vitest.setup.ts'],
+    // Absolute, like the alias above — a relative path here resolves against the running
+    // process's cwd when Vite discovers this config by walking upward from elsewhere
+    // (e.g. `pnpm --filter <pkg> test` from that package's own directory), not against
+    // this file's directory. That silently pointed at a nonexistent
+    // <cwd>/apps/web/vitest.setup.ts for any such invocation.
+    setupFiles: [fileURLToPath(new URL('./apps/web/vitest.setup.ts', import.meta.url))],
     env: {
       NODE_ENV: 'test',
       // Silence the API's request logger by default. Every `app.inject()` otherwise
