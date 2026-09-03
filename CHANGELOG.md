@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.2] - 2026-09-04
+
+### Changed
+- Release build, dependencies validation, and npm deployment with full support for OIDC Trusted Publishing and interactive CLI prompts.
+
+---
+
 ## [1.1.1] - 2026-09-03
 
 ### Fixed
