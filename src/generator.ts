@@ -16,6 +16,7 @@ export interface GeneratorOptions {
   skipInstall?: boolean;
   skipGit?: boolean;
   withInfra?: boolean;
+  theme?: 'neutral' | 'zinc' | 'violet' | 'rose';
 }
 
 export interface GeneratorResult {
@@ -289,7 +290,7 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
 
   // 5. Transform Project Metadata
   logger.step(2, 6, 'Configuring project metadata and configuration...');
-  await transformProjectMetadata(targetDir, packageName, humanTitle);
+  await transformProjectMetadata(targetDir, packageName, humanTitle, options.theme);
   logger.success('Project metadata transformed.');
 
   // 6. Setup Environment & Ignore Files
@@ -388,7 +389,8 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
 export async function transformProjectMetadata(
   targetDir: string,
   packageName: string,
-  humanTitle: string
+  humanTitle: string,
+  theme?: string
 ): Promise<void> {
   // A. Root package.json
   const rootPkgPath = path.join(targetDir, 'package.json');
@@ -475,6 +477,21 @@ export async function transformProjectMetadata(
       /title:\s*'[^']*'/,
       `title: '${humanTitle} API'`
     );
+  }
+
+  // F. apps/web/components.json
+  const componentsJsonPath = path.join(targetDir, 'apps/web/components.json');
+  if (fs.existsSync(componentsJsonPath) && theme) {
+    try {
+      const content = await fs.promises.readFile(componentsJsonPath, 'utf-8');
+      const data = JSON.parse(content);
+      if (data.tailwind) {
+        data.tailwind.baseColor = theme;
+        await fs.promises.writeFile(componentsJsonPath, JSON.stringify(data, null, 2) + '\n', 'utf-8');
+      }
+    } catch {
+      // ignore json parse error
+    }
   }
 
   // F. Tailored README.md

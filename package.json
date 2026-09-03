@@ -117,6 +117,10 @@
     "infra:logs": "docker compose logs -f",
     "health": "tsx scripts/health-check.ts"
   },
+  "dependencies": {
+    "@clack/prompts": "^0.10.0",
+    "picocolors": "^1.1.1"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@types/node": "^22.13.5",

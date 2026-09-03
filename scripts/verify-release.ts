@@ -128,8 +128,21 @@ async function verifyRelease(): Promise<void> {
     }
     console.log('[Release Gate] ✔ Zero hardcoded machine paths found in packaged files.');
 
-    // 9. Execute Generator from Unpacked Artifact
-    console.log('[Release Gate] 🚀 Step 8: Executing create-odoo-app from unpacked distribution...');
+    // 9. Install the packed artifact's own runtime dependencies
+    //
+    // `npm pack` only builds the tarball; it never installs anything. Running dist/cli.js
+    // straight out of the unpacked archive previously worked because the CLI had zero
+    // runtime npm dependencies. Interactive prompting added a real one (@clack/prompts),
+    // so this step now mirrors what `npx create-odoo-app` actually does for an end user:
+    // installing the package's own "dependencies" before executing it.
+    console.log('[Release Gate] 📥 Step 8: Installing packed artifact runtime dependencies...');
+    execSync('npm install --omit=dev --no-audit --no-fund', {
+      cwd: packageRoot,
+      stdio: 'ignore',
+    });
+
+    // 10. Execute Generator from Unpacked Artifact
+    console.log('[Release Gate] 🚀 Step 9: Executing create-odoo-app from unpacked distribution...');
     const targetAppDir = path.join(tempDir, 'enterprise-portal');
     const cliPath = path.join(packageRoot, 'dist', 'cli.js');
 
@@ -138,8 +151,8 @@ async function verifyRelease(): Promise<void> {
       stdio: 'inherit',
     });
 
-    // 10. Validate Generated Application
-    console.log('[Release Gate] 🔍 Step 9: Validating generated enterprise-portal project structure...');
+    // 11. Validate Generated Application
+    console.log('[Release Gate] 🔍 Step 10: Validating generated enterprise-portal project structure...');
     const requiredFiles = [
       'package.json',
       'pnpm-workspace.yaml',

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/hooks/use-auth';
 import {
   BookOpen,
@@ -63,6 +64,8 @@ export function Navbar() {
           </a>
 
           <div className="h-4 w-[1px] bg-border hidden sm:block" />
+
+          <ThemeToggle />
 
           {isLoading ? (
             <div className="h-8 w-20 bg-muted animate-pulse rounded" />
