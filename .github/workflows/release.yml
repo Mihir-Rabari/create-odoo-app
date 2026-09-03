@@ -38,6 +38,17 @@ jobs:
           corepack prepare pnpm@11.1.0 --activate
         shell: bash
 
+      - name: Upgrade npm for OIDC Trusted Publishing support
+        # actions/setup-node@v4 with node-version 22.x bundles whatever npm shipped with
+        # that Node release (10.9.8 as of this writing). npm's OIDC "Trusted Publishing"
+        # (an npm publish that authenticates via the workflow's own GitHub Actions OIDC
+        # token, no NPM_TOKEN secret needed) only landed in npm 11.5.1 — an older npm has
+        # no idea the mechanism exists and just publishes unauthenticated, failing with
+        # ENEEDAUTH. Trusted Publishing was correctly configured on the npm side; this was
+        # the actual gap.
+        run: npm install -g npm@latest
+        shell: bash
+
       - name: Verify Environment Bootstrap & Release Runtime
         run: |
           echo "=== Node, npm & Package Manager Release Runtime Information ==="
