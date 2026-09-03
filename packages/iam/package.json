@@ -16,7 +16,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@packages/auth": "workspace:*",
