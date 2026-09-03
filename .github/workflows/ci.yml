@@ -149,3 +149,11 @@ jobs:
 
       - name: Seed Is Idempotent
         run: pnpm db:seed
+
+      # Runs the IamService integration suite against the real Postgres/Redis
+      # containers above (seeded, so ROOT/ADMIN/AdministratorPolicy exist). This is
+      # the only CI job where these tests execute instead of skipping — see
+      # packages/iam/src/service/iam-service.integration.test.ts and the DATABASE_URL
+      # gate in vitest.config.ts for how the two stay in sync.
+      - name: IAM Service Integration Tests
+        run: pnpm test:coverage -- packages/iam

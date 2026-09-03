@@ -1,5 +1,12 @@
 import { defineConfig } from 'vitest/config';
 
+// The `database` CI job (see .github/workflows/ci.yml) is the only place `DATABASE_URL`
+// is set, so it's also the only place `iam-service.integration.test.ts` actually runs
+// instead of skipping. Gating the service-layer threshold on it keeps the no-database
+// quality gate green (it would otherwise fail on integration-only coverage it can never
+// produce) while still catching a coverage regression wherever Postgres is available.
+const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+
 export default defineConfig({
   test: {
     globals: true,
@@ -66,6 +73,22 @@ export default defineConfig({
           functions: 95,
           lines: 85,
         },
+
+        // iam-service.ts mediates every role/group/policy mutation and resolves
+        // effective permissions; its guard rails (assertCanGrantPolicy,
+        // assertNotSystemRecord, assertStatusChangeAllowed) and getEffectivePermissions
+        // are covered by iam-service.integration.test.ts, which only runs (rather than
+        // skips) when DATABASE_URL is set — hence gating this threshold the same way.
+        ...(hasDatabaseUrl
+          ? {
+              'packages/iam/src/service/**': {
+                statements: 70,
+                branches: 60,
+                functions: 70,
+                lines: 70,
+              },
+            }
+          : {}),
       },
     },
   },
