@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileCode2, Plus, Trash2, AlertCircle, Eye, X } from 'lucide-react';
 import type { PolicyStatement } from '@packages/validation';
+import { SUPPORTED_CONDITION_OPERATORS } from '@packages/validation';
 import { getErrorMessage } from '@/lib/errors';
 
 export default function PoliciesManagementPage() {
@@ -157,6 +158,17 @@ export default function PoliciesManagementPage() {
                   </Button>
                 </div>
 
+                <p className="text-[11px] text-muted-foreground">
+                  Conditions are edited via the API. Supported operators:{' '}
+                  {SUPPORTED_CONDITION_OPERATORS.map((op, i) => (
+                    <React.Fragment key={op}>
+                      {i > 0 && ', '}
+                      <code className="font-mono text-primary">{op}</code>
+                    </React.Fragment>
+                  ))}
+                  . Any other operator is rejected by the API.
+                </p>
+
                 <div className="space-y-3">
                   {statements.map((stmt, idx) => (
                     <div key={idx} className="p-3 rounded-lg border bg-muted/20 space-y-2 text-xs">
@@ -277,6 +289,12 @@ export default function PoliciesManagementPage() {
                       </Badge>
                     ))}
                   </div>
+                  {stmt.conditions && Object.keys(stmt.conditions).length > 0 && (
+                    <div className="text-[11px] text-muted-foreground pt-1">
+                      Conditions:{' '}
+                      <code className="font-mono">{JSON.stringify(stmt.conditions)}</code>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

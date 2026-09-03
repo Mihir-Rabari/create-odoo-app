@@ -22,6 +22,41 @@ export type Permission = z.infer<typeof PermissionSchema>;
 export const PolicyStatementEffectEnum = z.enum(['allow', 'deny']);
 export type PolicyStatementEffect = z.infer<typeof PolicyStatementEffectEnum>;
 
+// Canonical set of condition operators understood by the policy engine
+// (`packages/iam/src/policy/policy-engine.ts`). This lives in `@packages/validation`
+// rather than `@packages/iam` because validation has no dependency on iam (and must not
+// gain one), while iam already depends on validation — so iam imports this constant
+// rather than the other way around. Keeping a single source of truth means a policy
+// carrying an operator the engine doesn't understand is rejected at write time instead
+// of silently denying everything it touches at evaluation time.
+export const SUPPORTED_CONDITION_OPERATORS = [
+  'StringEquals',
+  'StringNotEquals',
+  'Bool',
+  'OwnerEquals',
+] as const;
+export type ConditionOperator = (typeof SUPPORTED_CONDITION_OPERATORS)[number];
+
+// A policy condition looks like { "StringEquals": { "some:key": "value" } } — the outer
+// keys are the operator names and must be restricted to the supported set. z.record()
+// can't express a restricted key set directly, so the outer keys are validated with
+// superRefine while the inner operand shape stays a free-form record.
+const ConditionOperandSchema = z.record(z.unknown());
+
+export const PolicyConditionsSchema = z
+  .record(ConditionOperandSchema)
+  .superRefine((conditions, ctx) => {
+    for (const operator of Object.keys(conditions)) {
+      if (!(SUPPORTED_CONDITION_OPERATORS as readonly string[]).includes(operator)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [operator],
+          message: `Unsupported condition operator "${operator}". Supported operators: ${SUPPORTED_CONDITION_OPERATORS.join(', ')}.`,
+        });
+      }
+    }
+  });
+
 export const PolicyStatementSchema = z.object({
   id: z.string().uuid().optional(),
   effect: PolicyStatementEffectEnum,
@@ -29,7 +64,7 @@ export const PolicyStatementSchema = z.object({
   resources: z.array(z.string()).default(['*']),
   // Nullable as well as optional: the column is stored as nullable jsonb, so a statement
   // read back from the database carries `null` rather than `undefined`.
-  conditions: z.record(z.unknown()).nullable().optional(),
+  conditions: PolicyConditionsSchema.nullable().optional(),
 });
 export type PolicyStatement = z.infer<typeof PolicyStatementSchema>;
 
