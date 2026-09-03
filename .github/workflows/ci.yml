@@ -156,4 +156,9 @@ jobs:
       # packages/iam/src/service/iam-service.integration.test.ts and the DATABASE_URL
       # gate in vitest.config.ts for how the two stay in sync.
       - name: IAM Service Integration Tests
-        run: pnpm test:coverage -- packages/iam
+        # `pnpm test:coverage -- packages/iam` does not actually forward the filter to
+        # vitest on this pnpm version — it silently ran the entire workspace suite
+        # (apps/api included) against this job's partial dependency set (Postgres/Redis
+        # up, no MinIO), which is what surfaced the readiness-endpoint bug fixed
+        # alongside this. Calling vitest directly filters correctly.
+        run: npx vitest run --coverage packages/iam

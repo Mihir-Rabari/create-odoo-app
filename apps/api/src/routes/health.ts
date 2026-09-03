@@ -59,7 +59,12 @@ export const healthRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (_request, reply) => {
       const readiness = await fastify.healthService.getReadiness();
-      const statusCode = readiness.status === 'error' ? 503 : 200;
+      // 200 must mean "every dependency is genuinely ok" — a caller that only checks the
+      // status code (the common case for load balancers / orchestrators) has no other way
+      // to learn that a dependency (e.g. MinIO) is unreachable while Postgres and Redis
+      // are fine. 'degraded' is still a failure to route traffic to this instance, so it
+      // gets 503 alongside 'error'; only 'ok' gets 200.
+      const statusCode = readiness.status === 'ok' ? 200 : 503;
       return reply.status(statusCode).send(readiness);
     }
   );
