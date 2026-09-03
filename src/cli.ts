@@ -33,12 +33,15 @@ Usage:
 Options:
   --skip-install    Skip installing dependencies with pnpm
   --skip-git        Skip initializing a new Git repository
+  --with-infra      Run "docker compose up -d" after install (opt-in; skipped
+                     automatically with --skip-install)
   -h, --help        Display this help message
   -v, --version     Display package version
 
 Examples:
   npx create-odoo-app my-app
   npx create-odoo-app my-app --skip-install
+  npx create-odoo-app my-app --with-infra
   npx create-odoo-app .
 `);
 }
@@ -60,6 +63,7 @@ async function main(): Promise<void> {
   let projectName = '';
   const skipInstall = args.includes('--skip-install');
   const skipGit = args.includes('--skip-git');
+  const withInfra = args.includes('--with-infra');
 
   for (const arg of args) {
     if (!arg.startsWith('-') && !projectName) {
@@ -86,6 +90,7 @@ async function main(): Promise<void> {
       projectName,
       skipInstall,
       skipGit,
+      withInfra,
       templateDir: path.resolve(__dirname, '..'),
     });
 
@@ -102,8 +107,7 @@ async function main(): Promise<void> {
 
 Next steps:
 
-${cdStep}${skipInstall ? '  \x1b[36mpnpm install\x1b[0m\n' : ''}  \x1b[36mpnpm infra:up\x1b[0m
-  \x1b[36mpnpm db:migrate\x1b[0m
+${cdStep}${skipInstall ? '  \x1b[36mpnpm install\x1b[0m\n' : ''}${result.infraStarted ? '' : '  \x1b[36mpnpm infra:up\x1b[0m\n'}  \x1b[36mpnpm db:migrate\x1b[0m
   \x1b[36mpnpm db:seed\x1b[0m
   \x1b[36mpnpm dev\x1b[0m
 `);
