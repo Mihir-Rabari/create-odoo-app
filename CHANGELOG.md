@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-04
+
+### Changed
+- **Redesigned the generated frontend.** The scaffolded app read like a brochure rather than an application: 40-word marketing sentences, "ROOT AUTHORITY" and "Infrastructure Status Probe" headings, a Sparkles icon on an admin button, a crown emoji in the navbar, and a decorative pulsing dot. The copy is now plain, and the decoration is gone.
+- **Status colour is now the only hue in the palette.** New `--success` / `--warning` tokens replace hardcoded `indigo`/`emerald`/`amber`/`rose`/`blue` classes across nine files. Half of them had no `dark:` variant, so dark mode was visibly inconsistent. A coloured pixel now always means a system state.
+- **Typography.** Inter and JetBrains Mono are loaded via `next/font` instead of falling through to the browser's default stack.
+- **The dashboard shows real data.** Its three stat tiles rendered static strings — "Security: HTTP-Only Cookie", "Precedence: Explicit Deny Override" — styled as if they were live metrics. They are now a definition list of actual account and session fields.
+
+### Fixed
+- **Dark-mode `--destructive` failed contrast as text** at 30.6% lightness. Raised to a readable red.
+- **Six pages nested a `container` inside `<main>`'s container,** rendering at double horizontal padding with a competing max-width. `<main>` is now the only container in the tree.
+- **Object storage reported "Operational" when its status was unknown.** `system-status` defaulted the storage service to `'ok'`; it now reports Unknown rather than claiming health it has not observed.
+- **The login page rendered the default root credentials in production builds.** The `root@example.com` / password hint block is now gated behind `NODE_ENV !== 'production'` and no longer prints the password.
+
+### Removed
+- **Internal roadmap text shipped as UI in every scaffolded app:** the `Phase 2: Identity & IAM` navbar badge and the `Phase 1 Foundation • Zero Hackathon Assumptions` footer.
+- **Hardcoded `http://localhost:3001`** in the navbar's API docs link and in the status error message. Both now use `API_BASE_URL`, so a deployed app points at its real API instead of the developer's laptop.
+- **`.claude` is now in `TEMPLATE_IGNORES`.** Local agent configuration was being copied into every generated project.
+
+---
+
 ## [1.1.3] - 2026-09-04
 
 ### Fixed
