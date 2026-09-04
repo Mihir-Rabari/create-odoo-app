@@ -39,6 +39,19 @@ export const TEMPLATE_IGNORES = [
   'implementation_plan.md',
   'walkthrough.md',
   '.system_generated',
+
+  // Scripts that develop and publish create-odoo-app itself, not a scaffolded app.
+  // Their package.json script entries are already stripped in transformProjectMetadata,
+  // but the files were still being copied — dead weight at best, and
+  // security-audit.test.ts actively breaks `pnpm test` in every generated project: it
+  // shells out to `git ls-files` expecting *this* repo's own git history, and asserts
+  // against create-odoo-app's own tracked-file set and identity, neither of which mean
+  // anything once renamed and re-scaffolded.
+  'security-audit.ts',
+  'security-audit.test.ts',
+  'verify-release.ts',
+  'smoke-test.ts',
+  'dogfood-test.ts',
 ];
 
 export function shouldIgnore(filePath: string, baseDir: string): boolean {

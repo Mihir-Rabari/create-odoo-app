@@ -207,7 +207,23 @@ async function verifyRelease(): Promise<void> {
       throw new Error('Expected README.md to contain "# Enterprise Portal"');
     }
 
-    // 11. Clean up root tarball
+    // 11. Install and test the generated application itself
+    //
+    // Everything above checks the *packed CLI*, not what it actually produces. That gap
+    // let three release-breaking bugs reach npm as 1.1.2 undetected: two packaging
+    // omissions (apps/web/vitest.setup.ts and packages/iam/vitest.config.ts missing from
+    // "files", so vitest.config.ts's absolute setupFiles path pointed at a file that
+    // didn't exist — crashing every single test in every generated app) and CLI-only dev
+    // scripts (scripts/security-audit.test.ts) getting copied in and failing on assertions
+    // that only make sense in this repo's own git history. A real `pnpm install && pnpm
+    // test` against the actual scaffolded output is the only check that would have caught
+    // any of them.
+    console.log('\n[Release Gate] 🧪 Step 11: Installing dependencies and running the generated application\'s own test suite...');
+    execSync('pnpm install', { cwd: targetAppDir, stdio: 'inherit' });
+    execSync('pnpm test', { cwd: targetAppDir, stdio: 'inherit' });
+    console.log('[Release Gate] ✔ Generated application\'s test suite passed.');
+
+    // 12. Clean up root tarball
     if (fs.existsSync(tarballPath)) {
       await fs.promises.unlink(tarballPath);
     }

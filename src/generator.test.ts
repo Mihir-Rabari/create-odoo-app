@@ -61,6 +61,17 @@ describe('Generator Unit Tests', () => {
       expect(shouldIgnore('/path/to/template/walkthrough.md', base)).toBe(true);
     });
 
+    it('should ignore scripts that develop and publish create-odoo-app itself', () => {
+      // These check *this* repo's own git history and identity (security-audit.test.ts
+      // shells out to `git ls-files`), or exist solely to verify/publish the CLI package
+      // — none of it means anything once copied into a scaffolded, renamed project.
+      expect(shouldIgnore('/path/to/template/scripts/security-audit.ts', base)).toBe(true);
+      expect(shouldIgnore('/path/to/template/scripts/security-audit.test.ts', base)).toBe(true);
+      expect(shouldIgnore('/path/to/template/scripts/verify-release.ts', base)).toBe(true);
+      expect(shouldIgnore('/path/to/template/scripts/smoke-test.ts', base)).toBe(true);
+      expect(shouldIgnore('/path/to/template/scripts/dogfood-test.ts', base)).toBe(true);
+    });
+
     it('should not ignore template source files', () => {
       expect(shouldIgnore('/path/to/template/apps/web/src/app/page.tsx', base)).toBe(false);
       expect(shouldIgnore('/path/to/template/packages/config/src/app-config.ts', base)).toBe(false);

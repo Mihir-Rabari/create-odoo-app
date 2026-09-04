@@ -407,6 +407,17 @@ export async function transformProjectMetadata(
     delete pkg.bin;
     delete pkg.files;
 
+    // Strip the CLI's own runtime dependencies (the interactive @clack/prompts wizard).
+    // The scaffolded app is a Next.js/Fastify starter with no CLI of its own — these
+    // would otherwise install into every generated project for no reason.
+    if (pkg.dependencies) {
+      delete pkg.dependencies['@clack/prompts'];
+      delete pkg.dependencies['picocolors'];
+      if (Object.keys(pkg.dependencies).length === 0) {
+        delete pkg.dependencies;
+      }
+    }
+
     // Strip the generator's own identity. Left in place, every scaffolded application
     // would point its issue tracker, homepage and authorship at this repository.
     delete pkg.repository;

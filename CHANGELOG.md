@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.3] - 2026-09-04
+
+### Fixed
+- **`pnpm test` crashed instantly in every scaffolded app.** `apps/web/vitest.setup.ts` and `packages/iam/vitest.config.ts` were never added to `package.json`'s `files` array, so they never shipped to npm — while the root `vitest.config.ts` (which does ship) references the former by absolute path. Every generated project's test suite failed outright with `Cannot find module`. Both files are now included.
+- **CLI-only runtime dependencies leaked into every generated app's `package.json`.** `@clack/prompts`/`picocolors` (added for the interactive wizard in 1.1.1) are meaningless in a scaffolded Next.js/Fastify starter; `transformProjectMetadata` now strips them like it already does for `bin`, `files`, and the CLI's own publish scripts.
+- **`scripts/security-audit.test.ts` was copied into every generated app and failed there.** It shells out to `git ls-files` and asserts against *this* repo's own tracked-file set and identity — neither means anything once renamed and rescaffolded. This and its sibling CLI-development-only scripts (`verify-release.ts`, `smoke-test.ts`, `dogfood-test.ts`) are no longer copied into scaffolded projects.
+- **`scripts/verify-release.ts` never actually ran the generated application.** It checked file *existence* only; none of the three bugs above would have reached npm as `1.1.2` if it had. It now runs `pnpm install && pnpm test` against the real scaffolded output before every release.
+
+---
+
 ## [1.1.2] - 2026-09-04
 
 ### Changed
