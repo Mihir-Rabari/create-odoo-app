@@ -5,7 +5,7 @@ import { useIamPermissions } from '@/hooks/use-iam';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Key, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import type { Permission } from '@packages/validation';
 
 export default function PermissionsCatalogPage() {
@@ -26,12 +26,9 @@ export default function PermissionsCatalogPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Key className="h-6 w-6 text-primary" />
-          <span>System Permissions Catalog</span>
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Registered system and feature action registry used in policy statement authorization
+        <h1 className="text-2xl font-semibold tracking-tight">Permissions</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every action the app knows about. Policies reference these by name.
         </p>
       </div>
 

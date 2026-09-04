@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { FileCode2, Plus, Trash2, AlertCircle, Eye, X } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Eye, X } from 'lucide-react';
 import type { PolicyStatement } from '@packages/validation';
 import { SUPPORTED_CONDITION_OPERATORS } from '@packages/validation';
 import { getErrorMessage } from '@/lib/errors';
@@ -104,12 +104,9 @@ export default function PoliciesManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FileCode2 className="h-6 w-6 text-primary" />
-            <span>IAM Policies</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Author granular Allow / Deny statements defining explicit access controls
+          <h1 className="text-2xl font-semibold tracking-tight">Policies</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A policy is a list of allow and deny statements. Deny always wins.
           </p>
         </div>
 

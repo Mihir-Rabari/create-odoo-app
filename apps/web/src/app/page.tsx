@@ -4,31 +4,17 @@ import { ArchitectureOverview } from '@/components/architecture-overview';
 
 export default function HomePage() {
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Hero Section */}
-      <section className="space-y-4 text-center md:text-left pt-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-muted/50 text-xs font-medium">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Production-Ready Full-Stack Architecture</span>
-        </div>
-        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
-          Next.js + Fastify Enterprise Starter
-        </h1>
-        <p className="text-muted-foreground text-base md:text-lg max-w-3xl leading-relaxed">
-          Engineered with strict package boundaries, type-safe runtime contracts, Fastify OpenAPI documentation, 
-          PostgreSQL with Drizzle ORM, Redis caching, S3-compatible storage, and Prometheus/Grafana observability.
+    <div className="space-y-10">
+      <section className="max-w-2xl space-y-3">
+        <h1 className="text-3xl font-semibold tracking-tight">Your stack is running.</h1>
+        <p className="text-muted-foreground leading-relaxed">
+          A Next.js frontend and a Fastify API, with Postgres, Redis, and S3-compatible storage
+          behind them. Everything below is live — if a service is down, you&apos;ll see it here.
         </p>
       </section>
 
-      {/* Live Health & Readiness Status */}
-      <section>
-        <SystemStatus />
-      </section>
-
-      {/* Architecture & Reference */}
-      <section>
-        <ArchitectureOverview />
-      </section>
+      <SystemStatus />
+      <ArchitectureOverview />
     </div>
   );
 }

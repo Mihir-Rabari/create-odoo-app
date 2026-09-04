@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { FolderTree, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
 export default function GroupsManagementPage() {
@@ -73,12 +73,9 @@ export default function GroupsManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FolderTree className="h-6 w-6 text-primary" />
-            <span>IAM Groups</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Organize users into structural groups to inherit shared access policies
+          <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Groups let a set of users share the same policies.
           </p>
         </div>
 

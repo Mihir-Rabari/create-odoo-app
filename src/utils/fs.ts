@@ -11,6 +11,7 @@ export const TEMPLATE_IGNORES = [
   '.github',
   '.idea',
   '.vscode',
+  '.claude',
   '.DS_Store',
   'Thumbs.db',
   '.npmignore',

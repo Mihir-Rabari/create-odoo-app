@@ -33,7 +33,6 @@ import {
   Ban,
   Plus,
   Trash2,
-  Sparkles,
 } from 'lucide-react';
 import type { UserStatus } from '@packages/validation';
 
@@ -196,13 +195,13 @@ export default function UserInspectorPage() {
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12 border shadow-sm">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold text-base">
+            <Avatar className="h-12 w-12 border">
+              <AvatarFallback className="bg-muted text-sm font-medium">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
                 <span>{user.name}</span>
                 <Badge
                   variant={isRoot ? 'destructive' : 'outline'}
@@ -223,7 +222,7 @@ export default function UserInspectorPage() {
                   {user.status}
                 </Badge>
               </h1>
-              <p className="text-sm text-muted-foreground mt-0.5 font-mono">{user.email}</p>
+              <p className="mt-0.5 font-mono text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
 
@@ -234,7 +233,7 @@ export default function UserInspectorPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleStatusChange('SUSPENDED')}
-                  className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-xs"
+                  className="text-xs text-warning border-warning/30 hover:bg-warning/10 hover:text-warning"
                 >
                   <AlertTriangle className="h-3.5 w-3.5 mr-1" />
                   Suspend Account
@@ -244,7 +243,7 @@ export default function UserInspectorPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleStatusChange('ACTIVE')}
-                  className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-xs"
+                  className="text-xs text-success border-success/30 hover:bg-success/10 hover:text-success"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                   Activate Account
@@ -267,21 +266,18 @@ export default function UserInspectorPage() {
         </div>
       </div>
 
-      {/* Live Effective Permissions Breakdown */}
-      <Card className="border-primary/20 bg-card/60 shadow-sm">
+      <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span>Live Effective Permissions Breakdown</span>
-              </CardTitle>
-              <CardDescription className="mt-1">
-                Real-time calculation evaluated across direct user policies, group inheritance, and assigned roles
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              <CardTitle>Effective permissions</CardTitle>
+              <CardDescription>
+                What this account can actually do, after its own policies, its groups, and its roles
+                are combined.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="font-mono text-xs">
-              {permsLoading ? 'Calculating...' : `${effectiveData?.effectivePermissions.length ?? 0} Actions Allowed`}
+            <Badge variant="outline" className="tabular shrink-0 font-mono text-xs">
+              {permsLoading ? '—' : effectiveData?.effectivePermissions.length ?? 0}
             </Badge>
           </div>
         </CardHeader>

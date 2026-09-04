@@ -7,10 +7,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { User, Mail, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
 export default function ProfilePage() {
@@ -39,7 +37,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="container py-12 max-w-2xl space-y-6">
+      <div className="max-w-2xl space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -48,8 +46,8 @@ export default function ProfilePage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="container py-20 max-w-lg text-center space-y-4">
-        <h1 className="text-xl font-bold">Please log in to manage your profile</h1>
+      <div className="max-w-lg space-y-4">
+        <h1 className="text-2xl font-semibold tracking-tight">Sign in to manage your profile</h1>
       </div>
     );
   }
@@ -112,142 +110,128 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container py-8 max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account & Profile</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your identity details, credentials, and self-service account settings
+          Update your name and password.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Profile Card */}
-        <Card className="border-border shadow-sm">
+      <div className="space-y-6">
+        <Card>
           <form onSubmit={handleUpdateProfile}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  <span>Profile Information</span>
-                </CardTitle>
-                <Badge variant={user.identityType === 'ROOT' ? 'destructive' : 'outline'}>
-                  {user.identityType}
-                </Badge>
-              </div>
+              <CardTitle>Details</CardTitle>
               <CardDescription>
-                Guarded by policy permission <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">profile:update:self</code>
+                Requires the <code className="font-mono text-xs">profile:update:self</code>{' '}
+                permission.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {profileSuccess && (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>{profileSuccess}</span>
-                </div>
+                <p className="rounded-md border border-success/25 bg-success/10 p-3 text-sm text-success">
+                  {profileSuccess}
+                </p>
               )}
               {profileError && (
-                <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{profileError}</span>
-                </div>
+                <p
+                  role="alert"
+                  className="rounded-md border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {profileError}
+                </p>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="prof-name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="prof-name"
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="prof-name">Name</Label>
+                <Input
+                  id="prof-name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="prof-email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="prof-email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="prof-email">Email</Label>
+                <Input
+                  id="prof-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
             </CardContent>
 
-            <CardFooter className="flex justify-end border-t pt-4">
+            <CardFooter className="justify-end border-t pt-6">
               <Button type="submit" disabled={profileLoading}>
-                {profileLoading ? 'Saving...' : 'Save Profile Changes'}
+                {profileLoading ? 'Saving…' : 'Save'}
               </Button>
             </CardFooter>
           </form>
         </Card>
 
-        {/* Change Password Card */}
-        <Card className="border-border shadow-sm">
+        <Card>
           <form onSubmit={handleChangePassword}>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <KeyRound className="h-5 w-5 text-primary" />
-                <span>Change Password</span>
-              </CardTitle>
-              <CardDescription>
-                Update your account password with scrypt-backed cryptographic hashing
-              </CardDescription>
+              <CardTitle>Password</CardTitle>
+              <CardDescription>You&apos;ll stay signed in on this device.</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {passwordSuccess && (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>{passwordSuccess}</span>
-                </div>
+                <p className="rounded-md border border-success/25 bg-success/10 p-3 text-sm text-success">
+                  {passwordSuccess}
+                </p>
               )}
               {passwordError && (
-                <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{passwordError}</span>
-                </div>
+                <p
+                  role="alert"
+                  className="rounded-md border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {passwordError}
+                </p>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="current-pwd">Current Password</Label>
+                <Label htmlFor="current-pwd">Current password</Label>
                 <Input
                   id="current-pwd"
                   type="password"
+                  autoComplete="current-password"
                   required
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="••••••••"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="new-pwd">New Password (min. 8 characters)</Label>
+                <Label htmlFor="new-pwd">New password</Label>
                 <Input
                   id="new-pwd"
                   type="password"
+                  autoComplete="new-password"
                   required
                   minLength={8}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
+                  aria-describedby="new-pwd-hint"
                 />
+                <p id="new-pwd-hint" className="text-xs text-muted-foreground">
+                  At least 8 characters.
+                </p>
               </div>
             </CardContent>
 
-            <CardFooter className="flex justify-end border-t pt-4">
+            <CardFooter className="justify-end border-t pt-6">
               <Button type="submit" disabled={passwordLoading}>
-                {passwordLoading ? 'Updating Password...' : 'Update Password'}
+                {passwordLoading ? 'Updating…' : 'Update password'}
               </Button>
             </CardFooter>
           </form>

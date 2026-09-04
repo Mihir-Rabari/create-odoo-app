@@ -8,9 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { UserPlus, User, Mail, AlertCircle, KeyRound, Shield } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
 export default function SignupPage() {
@@ -35,9 +33,7 @@ export default function SignupPage() {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters long');
-      toast.error('Weak password', {
-        description: 'Password must be at least 8 characters long.',
-      });
+      toast.error('Password must be at least 8 characters long');
       return;
     }
 
@@ -45,126 +41,96 @@ export default function SignupPage() {
 
     try {
       await signup({ name, email, password });
-      toast.success('Account created successfully!', {
-        description: 'Welcome to your new workspace.',
-      });
+      toast.success('Account created');
       router.push('/dashboard');
     } catch (err: unknown) {
       const msg = getErrorMessage(err, 'Registration failed. Please try again.');
       setError(msg);
-      toast.error('Registration failed', {
-        description: msg,
-      });
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container flex min-h-[calc(100vh-14rem)] items-center justify-center py-12">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2 shadow-sm">
-            <UserPlus className="h-6 w-6" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
-          <p className="text-sm text-muted-foreground">
-            Sign up to get instant access with external user permissions
-          </p>
-        </div>
-
-        <Card className="border-border shadow-md">
+    <div className="flex min-h-[calc(100vh-16rem)] items-center justify-center">
+      <div className="w-full max-w-sm">
+        <Card>
           <form onSubmit={handleSubmit}>
-            <CardHeader className="space-y-1 pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Registration</CardTitle>
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  External User
-                </Badge>
-              </div>
+            <CardHeader>
+              <CardTitle>Create an account</CardTitle>
               <CardDescription>
-                Public registration assigns baseline ExternalUserPolicy
+                You&apos;ll be able to manage your own profile. An administrator grants anything
+                beyond that.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {error && (
-                <div className="flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <div className="flex-1 font-medium">{error}</div>
-                </div>
+                <p
+                  role="alert"
+                  className="rounded-md border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {error}
+                </p>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Jane Doe"
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="jane@example.com"
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password (min. 8 characters)</Label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  aria-describedby="password-hint"
+                />
+                <p id="password-hint" className="text-xs text-muted-foreground">
+                  At least 8 characters.
+                </p>
               </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button type="submit" className="w-full" disabled={loading}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                {loading ? 'Creating Account...' : 'Create Account'}
+            <CardFooter className="flex flex-col items-stretch gap-4">
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Creating account…' : 'Create account'}
               </Button>
 
-              <div className="w-full text-center text-xs text-muted-foreground">
+              <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{' '}
-                <Link href="/login" className="text-primary font-medium hover:underline">
+                <Link href="/login" className="text-foreground underline underline-offset-4">
                   Sign in
                 </Link>
-              </div>
+              </p>
             </CardFooter>
           </form>
         </Card>
-
-        <div className="rounded-lg border border-border bg-card/60 p-3 text-xs text-muted-foreground flex items-center gap-2">
-          <Shield className="h-4 w-4 text-primary shrink-0" />
-          <span>New accounts automatically receive baseline self-management policies.</span>
-        </div>
       </div>
     </div>
   );

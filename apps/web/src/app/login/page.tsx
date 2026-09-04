@@ -8,9 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { LogIn, Lock, Mail, AlertCircle, ShieldAlert, KeyRound } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
 
 export default function LoginPage() {
@@ -36,16 +34,12 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
-      toast.success('Signed in successfully', {
-        description: 'Welcome back to your workspace.',
-      });
+      toast.success('Signed in');
       router.push('/dashboard');
     } catch (err: unknown) {
       const msg = getErrorMessage(err, 'Login failed. Please check your credentials.');
       setError(msg);
-      toast.error('Authentication failed', {
-        description: msg,
-      });
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -55,115 +49,85 @@ export default function LoginPage() {
     setEmail('root@example.com');
     setPassword('RootSecurePass123!');
     setError(null);
-    toast.info('Root credentials loaded', {
-      description: 'Click Sign In to authenticate as ROOT.',
-    });
+    toast.info('Root credentials filled in');
   };
 
   return (
-    <div className="container flex min-h-[calc(100vh-14rem)] items-center justify-center py-12">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-2 shadow-sm">
-            <Lock className="h-6 w-6" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Sign in to your account</h1>
-          <p className="text-sm text-muted-foreground">
-            Enter your credentials to access your session & permissions
-          </p>
-        </div>
-
-        <Card className="border-border shadow-md">
+    <div className="flex min-h-[calc(100vh-16rem)] items-center justify-center">
+      <div className="w-full max-w-sm space-y-6">
+        <Card>
           <form onSubmit={handleSubmit}>
-            <CardHeader className="space-y-1 pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Authentication</CardTitle>
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  HTTP-Only Session
-                </Badge>
-              </div>
-              <CardDescription>
-                Use email & password to establish a cryptographic session
-              </CardDescription>
+            <CardHeader>
+              <CardTitle>Sign in</CardTitle>
+              <CardDescription>Welcome back.</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {error && (
-                <div className="flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <div className="flex-1 font-medium">{error}</div>
-                </div>
+                <p
+                  role="alert"
+                  className="rounded-md border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {error}
+                </p>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@example.com"
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="pl-9"
-                  />
-                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button type="submit" className="w-full" disabled={loading}>
-                <LogIn className="mr-2 h-4 w-4" />
-                {loading ? 'Authenticating...' : 'Sign In'}
+            <CardFooter className="flex flex-col items-stretch gap-4">
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Signing in…' : 'Sign in'}
               </Button>
 
-              <div className="w-full text-center text-xs text-muted-foreground">
-                Don&apos;t have an account?{' '}
-                <Link href="/signup" className="text-primary font-medium hover:underline">
+              <p className="text-center text-sm text-muted-foreground">
+                No account?{' '}
+                <Link href="/signup" className="text-foreground underline underline-offset-4">
                   Sign up
                 </Link>
-              </div>
+              </p>
             </CardFooter>
           </form>
         </Card>
 
-        {/* Quick Root Bootstrap Helper */}
-        <div className="rounded-lg border border-border bg-card/60 p-4 text-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold flex items-center gap-1.5 text-foreground">
-              <ShieldAlert className="h-3.5 w-3.5 text-blue-500" />
-              Developer Shortcut
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={prefillRoot}
-              className="h-7 text-xs px-2"
-            >
-              Fill Root Credentials
-            </Button>
+        {/* Seeded root credentials. Development only — never rendered in a
+            production build, so the defaults can't leak from a deployed app. */}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="space-y-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between gap-2">
+              <span>Dev only</span>
+              <Button type="button" variant="ghost" size="sm" onClick={prefillRoot}>
+                Use root account
+              </Button>
+            </div>
+            <p>
+              Matches the root credentials in <code className="font-mono">.env</code>. If you changed
+              them there, enter them by hand.
+            </p>
           </div>
-          <p className="text-muted-foreground text-[11px] leading-relaxed">
-            Initial ROOT administrator bootstrapped from <code className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded">.env</code>: <code className="font-mono text-primary font-semibold">root@example.com</code> / <code className="font-mono text-primary font-semibold">RootSecurePass123!</code>
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );

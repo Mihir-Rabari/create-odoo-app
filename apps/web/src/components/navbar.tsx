@@ -2,115 +2,84 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/hooks/use-auth';
-import {
-  BookOpen,
-  User,
-  ShieldCheck,
-  LogOut,
-  LogIn,
-  LayoutDashboard,
-  UserPlus } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 
 export function Navbar() {
   const { user, isAuthenticated, isLoading, isRoot, hasPermission, logout } = useAuth();
+  const pathname = usePathname();
   const canAccessAdmin = isRoot || hasPermission('admin:access');
+
+  const links = [
+    { href: '/dashboard', label: 'Dashboard', show: true },
+    { href: '/admin', label: 'Admin', show: canAccessAdmin },
+  ].filter((l) => l.show);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center space-x-2 font-bold tracking-tight">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-mono">
-              PS
-            </div>
-            <span>Production Starter</span>
-          </Link>
-          <Badge variant="outline" className="text-xs font-mono">
-            Phase 2: Identity & IAM
-          </Badge>
-        </div>
+      <div className="container flex h-14 items-center gap-6">
+        <Link href="/" className="font-semibold tracking-tight">
+          <span>Production Starter</span>
+        </Link>
 
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span>Dashboard</span>
-          </Link>
-
-          {canAccessAdmin && (
+        <nav className="flex items-center gap-5 text-sm">
+          {links.map((link) => (
             <Link
-              href="/admin"
-              className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors font-semibold"
+              key={link.href}
+              href={link.href}
+              aria-current={pathname.startsWith(link.href) ? 'page' : undefined}
+              className={cn(
+                'transition-colors hover:text-foreground',
+                pathname.startsWith(link.href) ? 'text-foreground' : 'text-muted-foreground'
+              )}
             >
-              <ShieldCheck className="h-4 w-4" />
-              <span>IAM Admin</span>
+              {link.label}
             </Link>
-          )}
-
+          ))}
           <a
-            href="http://localhost:3001/api/docs"
+            href={`${API_BASE_URL}/api/docs`}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden md:flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline"
           >
-            <BookOpen className="h-4 w-4" />
-            <span>OpenAPI</span>
+            API docs
           </a>
+        </nav>
 
-          <div className="h-4 w-[1px] bg-border hidden sm:block" />
-
+        <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
 
           {isLoading ? (
-            <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
           ) : isAuthenticated && user ? (
-            <div className="flex items-center gap-3">
+            <>
               <Link
                 href="/profile"
-                className="flex items-center gap-1.5 text-xs text-foreground bg-muted px-2.5 py-1 rounded-md hover:bg-muted/80 transition-colors"
+                className="max-w-[160px] truncate text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                <User className="h-3.5 w-3.5" />
-                <span className="font-medium max-w-[120px] truncate">{user.name || user.email}</span>
-                <Badge
-                  variant={user.identityType === 'ROOT' ? 'destructive' : 'secondary'}
-                  className="text-[10px] px-1 py-0 ml-1 uppercase"
-                >
-                  {user.identityType === 'ROOT' ? '👑 ROOT' : user.identityType}
-                </Badge>
+                {user.name || user.email}
               </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => logout()}
-                className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="h-3.5 w-3.5 mr-1" />
-                Logout
+              <Button variant="ghost" size="sm" onClick={() => logout()}>
+                Sign out
               </Button>
-            </div>
+            </>
           ) : (
-            <div className="flex items-center gap-2">
+            <>
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  <LogIn className="h-3.5 w-3.5 mr-1" />
-                  Log In
+                <Button variant="ghost" size="sm">
+                  Sign in
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="h-8 text-xs">
-                  <UserPlus className="h-3.5 w-3.5 mr-1" />
-                  Sign Up
-                </Button>
+                <Button size="sm">Sign up</Button>
               </Link>
-            </div>
+            </>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

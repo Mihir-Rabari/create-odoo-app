@@ -64,12 +64,9 @@ export default function UsersManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
-            <span>User Identities</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage authenticated user accounts, inspect permissions, and regulate account access status
+          <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Accounts, their permissions, and their status.
           </p>
         </div>
       </div>
@@ -206,7 +203,7 @@ export default function UsersManagementPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleStatusChange(u.id, 'SUSPENDED')}
-                                  className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                                  className="h-8 px-2 text-xs text-warning hover:text-warning hover:bg-warning/10"
                                   title="Suspend User"
                                 >
                                   <AlertTriangle className="h-3.5 w-3.5" />
@@ -216,7 +213,7 @@ export default function UsersManagementPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleStatusChange(u.id, 'ACTIVE')}
-                                  className="h-8 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                                  className="h-8 px-2 text-xs text-success hover:text-success hover:bg-success/10"
                                   title="Activate User"
                                 >
                                   <CheckCircle2 className="h-3.5 w-3.5" />
