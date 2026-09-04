@@ -47,7 +47,7 @@ importers:
         specifier: ^8.69.0
         version: 8.69.0(eslint@9.39.5(jiti@1.21.7))(typescript@5.9.3)
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.12)(yaml@2.9.0)
 
   apps/api:
@@ -129,7 +129,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.12)(yaml@2.9.0)
 
   apps/web:
@@ -247,7 +247,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/auth:
@@ -278,7 +278,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/config:
@@ -297,7 +297,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/db:
@@ -331,7 +331,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/iam:
@@ -368,7 +368,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/openapi:
@@ -390,7 +390,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/shared:
@@ -421,7 +421,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
   packages/validation:
@@ -437,7 +437,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
       vitest:
-        specifier: ^3.0.7
+        specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(jiti@1.21.7)(jsdom@30.0.1)(tsx@4.23.13)(yaml@2.9.0)
 
 packages:
