@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-09-05
+
+### Added
+- **A real landing page at `/`, generated for every project.** Previously `/` was the live status dashboard, so a scaffolded app had no front door. It follows one claim → one proof → one next step, and uses the live service probe as the proof.
+- **An application shell.** `Sidebar`, `Topbar`, `PageHeader`, and `EmptyState` under `components/app-shell/`. `PageHeader` gives every screen one consistent heading treatment; `EmptyState` exists so a list with no records stops rendering a grid of cards that all read "None listed".
+- **`skills/design/SKILL.md`** — the design law for generated apps: route groups, colour tokens, typographic roles, when an icon is permitted (and that emoji never are), the four states every screen owes the user, density, copy, and accessibility. `skills/frontend/SKILL.md` was 35 lines of pure plumbing with no design guidance at all, which is why agents building on this template defaulted to gradients and emoji.
+
+### Changed
+- **The `--theme` flag now actually themes the app.** It previously wrote only `components.json`'s `baseColor` — a field nothing reads at runtime, since it only affects later `npx shadcn add` runs — while `globals.css` shipped byte-identical. Choosing "Violet / Indigo" produced exactly the same grey app as "Neutral / Slate". Each of the four themes now carries a full light *and* dark palette, a font pairing, and a corner radius, all written into `globals.css` and `layout.tsx` at generation time.
+- **Routes are split into three groups**, each owning its own chrome: `(marketing)` (public header/footer), `(app)` (sidebar, topbar, and the auth guard), and `(auth)` (a bare centred frame). URLs are unchanged. Because the guard lives in the `(app)` layout, a new screen cannot forget it, and pages render content only — no auth branching, no width override, no navigation of their own.
+- **The admin section's nested sidebar became a tab strip.** Two vertical navigation rails side by side was the wrong answer once the app shell existed.
+- **`skills/frontend/SKILL.md` and both `AGENTS.md` files** now lead with the non-negotiables and defer to the design skill.
+
+### Fixed
+- **The project rename could silently stop working.** It targeted `apps/web/src/components/navbar.tsx` and nothing asserted on the result, so removing that file would have left every generated app displaying "Production Starter" while all 46 smoke assertions still passed. The wordmark now spans three layouts, each verified — along with the theme reaching `globals.css` and the font markers surviving. The smoke test went from 46 assertions to 57.
+
+---
+
 ## [1.2.0] - 2026-09-04
 
 ### Changed
