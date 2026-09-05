@@ -7,12 +7,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/app-shell/page-header';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/errors';
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, isLoading, refreshSession } = useAuth();
+  const { user, refreshSession } = useAuth();
 
   // Profile fields
   const [name, setName] = useState('');
@@ -35,22 +35,8 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  if (isLoading) {
-    return (
-      <div className="max-w-2xl space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="max-w-lg space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in to manage your profile</h1>
-      </div>
-    );
-  }
+  // Auth is guaranteed by the (app) layout; this screen renders content only.
+  if (!user) return null;
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,13 +96,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Update your name and password.
-        </p>
-      </div>
+    <>
+      <PageHeader title="Profile" description="Update your name and password." />
 
       <div className="space-y-6">
         <Card>
@@ -237,6 +218,6 @@ export default function ProfilePage() {
           </form>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

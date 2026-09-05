@@ -23,12 +23,12 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     await fs.promises.mkdir(tempOutDir, { recursive: true });
   });
 
-  it('should parse skills/index.yaml and discover all 14 canonical skills', async () => {
+  it('should parse skills/index.yaml and discover all 15 canonical skills', async () => {
     const indexPath = path.join(rootDir, 'skills', 'index.yaml');
     const content = await fs.promises.readFile(indexPath, 'utf-8');
     const skills = parseIndexYaml(content);
 
-    expect(skills.length).toBe(14);
+    expect(skills.length).toBe(15);
     const skillNames = skills.map((s) => s.name);
     expect(skillNames).toContain('architecture');
     expect(skillNames).toContain('authentication');
@@ -120,13 +120,13 @@ describe('Agent Skills Architecture & Packaging Tests', () => {
     expect(frontmatter.name).toBe('authentication');
   });
 
-  it('should pack all 14 canonical skills into output directory', async () => {
+  it('should pack all 15 canonical skills into output directory', async () => {
     const count = await packAllSkills({
       outDir: tempOutDir,
       silent: true,
     });
 
-    expect(count).toBe(14);
+    expect(count).toBe(15);
 
     const canonicalNames = [
       'architecture',

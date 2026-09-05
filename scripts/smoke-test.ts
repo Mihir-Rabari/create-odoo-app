@@ -46,6 +46,17 @@ async function runSmokeTest(): Promise<void> {
       'apps/web/next.config.mjs',
       'apps/web/postcss.config.mjs',
       'apps/web/src/app/layout.tsx',
+      'apps/web/src/app/globals.css',
+      'apps/web/src/app/(marketing)/page.tsx',
+      'apps/web/src/app/(marketing)/layout.tsx',
+      'apps/web/src/app/(app)/layout.tsx',
+      'apps/web/src/app/(app)/dashboard/page.tsx',
+      'apps/web/src/app/(auth)/layout.tsx',
+      'apps/web/src/app/(auth)/login/page.tsx',
+      'apps/web/src/components/app-shell/sidebar.tsx',
+      'apps/web/src/components/app-shell/page-header.tsx',
+      'apps/web/src/components/app-shell/empty-state.tsx',
+      'apps/web/src/components/marketing/site-header.tsx',
       'apps/web/AGENTS.md',
       'apps/api/package.json',
       'apps/api/src/server.ts',
@@ -114,6 +125,57 @@ async function runSmokeTest(): Promise<void> {
     }
     if (!appConfig.includes("slug: 'smoke-portal'")) {
       throw new Error('Expected app-config.ts to contain slug "smoke-portal"');
+    }
+
+    // Validate the wordmark rename reached every layout that renders it.
+    //
+    // This used to target a single `components/navbar.tsx`, and nothing
+    // asserted on the result — so when that file was removed during the route
+    // group restructure, the rename silently stopped happening in the UI while
+    // every other check still passed. Each entry here mirrors `brandFiles` in
+    // the generator.
+    const brandFiles = [
+      'apps/web/src/app/(app)/layout.tsx',
+      'apps/web/src/app/(auth)/layout.tsx',
+      'apps/web/src/components/marketing/site-header.tsx',
+    ];
+
+    for (const brandFile of brandFiles) {
+      const contents = await fs.promises.readFile(path.join(tempDir, brandFile), 'utf-8');
+
+      if (!contents.includes('<span>Smoke Portal</span>')) {
+        throw new Error(`Expected ${brandFile} to render the renamed wordmark "Smoke Portal"`);
+      }
+      if (contents.includes('Production Starter')) {
+        throw new Error(`Expected ${brandFile} to no longer contain the template name`);
+      }
+    }
+
+    // Validate the theme was actually applied, rather than only recorded in
+    // components.json — which is what happened before 1.2.0, leaving every
+    // generated app identical no matter which theme was chosen.
+    const globalsCss = await fs.promises.readFile(
+      path.join(tempDir, 'apps/web/src/app/globals.css'),
+      'utf-8'
+    );
+    for (const token of ['--primary:', '--success:', '--warning:', '--radius:']) {
+      if (!globalsCss.includes(token)) {
+        throw new Error(`Expected generated globals.css to define ${token}`);
+      }
+    }
+    if (!globalsCss.includes('.dark {')) {
+      throw new Error('Expected generated globals.css to define a dark palette');
+    }
+
+    const webLayout = await fs.promises.readFile(
+      path.join(tempDir, 'apps/web/src/app/layout.tsx'),
+      'utf-8'
+    );
+    if (!webLayout.includes('FONTS:START') || !webLayout.includes('FONTS:END')) {
+      throw new Error('Expected layout.tsx to keep the FONTS markers the theme replaces');
+    }
+    if (!webLayout.includes("next/font/google")) {
+      throw new Error('Expected layout.tsx to load fonts via next/font/google');
     }
 
     // Validate README.md

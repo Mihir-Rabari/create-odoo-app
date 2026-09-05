@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { copyDirectory, replaceInFile } from './utils/fs.js';
 import { logger } from './utils/logger.js';
+import { getTheme, renderGlobalsCss, renderFontBlock, type ThemeId } from './themes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +17,7 @@ export interface GeneratorOptions {
   skipInstall?: boolean;
   skipGit?: boolean;
   withInfra?: boolean;
-  theme?: 'neutral' | 'zinc' | 'violet' | 'rose';
+  theme?: ThemeId;
 }
 
 export interface GeneratorResult {
@@ -384,13 +385,67 @@ export async function generateProject(options: GeneratorOptions): Promise<Genera
 }
 
 /**
+ * Writes the selected theme into the generated app.
+ *
+ * Three files decide whether two generated apps read as different products:
+ * `globals.css` (colour + radius), `layout.tsx` (type), and `components.json`
+ * (so later `shadcn add` runs stay consistent with the rest). All three are
+ * rewritten here.
+ */
+export async function applyTheme(targetDir: string, themeId: ThemeId): Promise<void> {
+  const theme = getTheme(themeId);
+
+  const globalsPath = path.join(targetDir, 'apps/web/src/app/globals.css');
+  if (fs.existsSync(globalsPath)) {
+    await fs.promises.writeFile(globalsPath, renderGlobalsCss(theme), 'utf-8');
+  }
+
+  // Replace the whole font block between its markers. A regex over the
+  // individual declarations cannot work: only some families take a `weight`
+  // array, so the shape of the block differs per theme.
+  const layoutPath = path.join(targetDir, 'apps/web/src/app/layout.tsx');
+  if (fs.existsSync(layoutPath)) {
+    const layout = await fs.promises.readFile(layoutPath, 'utf-8');
+    const block = /\/\* FONTS:START[\s\S]*?\/\* FONTS:END \*\//;
+
+    if (block.test(layout)) {
+      const replacement = [
+        '/* FONTS:START — replaced wholesale when a theme is applied at generation time.',
+        '   Edit freely; just keep the markers if you want `--theme` to keep working. */',
+        renderFontBlock(theme),
+        '/* FONTS:END */',
+      ].join('\n');
+
+      await fs.promises.writeFile(layoutPath, layout.replace(block, replacement), 'utf-8');
+    }
+  }
+
+  const componentsJsonPath = path.join(targetDir, 'apps/web/components.json');
+  if (fs.existsSync(componentsJsonPath)) {
+    try {
+      const data = JSON.parse(await fs.promises.readFile(componentsJsonPath, 'utf-8'));
+      if (data.tailwind) {
+        data.tailwind.baseColor = theme.baseColor;
+        await fs.promises.writeFile(
+          componentsJsonPath,
+          JSON.stringify(data, null, 2) + '\n',
+          'utf-8'
+        );
+      }
+    } catch {
+      // A malformed components.json is not worth failing a scaffold over.
+    }
+  }
+}
+
+/**
  * Transforms all project-specific metadata in the generated target directory.
  */
 export async function transformProjectMetadata(
   targetDir: string,
   packageName: string,
   humanTitle: string,
-  theme?: string
+  theme?: ThemeId
 ): Promise<void> {
   // A. Root package.json
   const rootPkgPath = path.join(targetDir, 'package.json');
@@ -470,14 +525,27 @@ export async function transformProjectMetadata(
     );
   }
 
-  // D. apps/web/src/components/navbar.tsx
-  const navbarPath = path.join(targetDir, 'apps/web/src/components/navbar.tsx');
-  if (fs.existsSync(navbarPath)) {
-    await replaceInFile(
-      navbarPath,
-      /<span>Production Starter<\/span>/,
-      `<span>${humanTitle}</span>`
-    );
+  // D. The app's own name, wherever it is rendered as the wordmark.
+  //
+  // This used to target only `components/navbar.tsx`. That file no longer
+  // exists — each route group now owns its own chrome — so the list is explicit
+  // and every entry is asserted by the smoke test. Adding a new layout that
+  // renders the wordmark means adding it here too.
+  const brandFiles = [
+    'apps/web/src/app/(app)/layout.tsx',
+    'apps/web/src/app/(auth)/layout.tsx',
+    'apps/web/src/components/marketing/site-header.tsx',
+  ];
+
+  for (const relativePath of brandFiles) {
+    const brandPath = path.join(targetDir, relativePath);
+    if (fs.existsSync(brandPath)) {
+      await replaceInFile(
+        brandPath,
+        /<span>Production Starter<\/span>/,
+        `<span>${humanTitle}</span>`
+      );
+    }
   }
 
   // E. packages/openapi/src/builder.ts
@@ -490,19 +558,14 @@ export async function transformProjectMetadata(
     );
   }
 
-  // F. apps/web/components.json
-  const componentsJsonPath = path.join(targetDir, 'apps/web/components.json');
-  if (fs.existsSync(componentsJsonPath) && theme) {
-    try {
-      const content = await fs.promises.readFile(componentsJsonPath, 'utf-8');
-      const data = JSON.parse(content);
-      if (data.tailwind) {
-        data.tailwind.baseColor = theme;
-        await fs.promises.writeFile(componentsJsonPath, JSON.stringify(data, null, 2) + '\n', 'utf-8');
-      }
-    } catch {
-      // ignore json parse error
-    }
+  // F. Apply the selected theme.
+  //
+  // This used to write `components.json`'s `baseColor` and nothing else — a
+  // field only `npx shadcn add` reads, so `globals.css` shipped identical and
+  // every generated app looked the same whatever the user picked. The theme now
+  // rewrites the colour tokens, the radius, and the font pairing.
+  if (theme) {
+    await applyTheme(targetDir, theme);
   }
 
   // F. Tailored README.md

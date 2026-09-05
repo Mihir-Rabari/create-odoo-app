@@ -25,6 +25,10 @@ skills:
     path: skills/frontend/SKILL.md
     description: Next.js App Router, shadcn/ui components, Tailwind CSS, TanStack Query, AuthContext, and permission-aware UI.
 
+  - name: design
+    path: skills/design/SKILL.md
+    description: Visual design law — screen structure, colour tokens, typography, icons, spacing, and the states every screen owes the user.
+
   - name: security
     path: skills/security/SKILL.md
     description: Zero-trust input rules, server-side authorization, credential protection, and adversarial security testing.

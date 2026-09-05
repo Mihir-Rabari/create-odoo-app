@@ -157,7 +157,7 @@ pnpm health           # Run end-to-end infrastructure health check
 
 ## 6. Agent Skills Standard, Discovery & Composition
 
-This repository provides 14 standardized Agent Skills under `skills/` following the **Agent Skills open standard**. Use `skills/index.yaml` as the machine-readable discovery registry.
+This repository provides 15 standardized Agent Skills under `skills/` following the **Agent Skills open standard**. Use `skills/index.yaml` as the machine-readable discovery registry.
 
 ### Repository Guidance vs Skill Bundles
 - **`AGENTS.md`**: Persistent repository operating manual describing architecture, commands, and rules.
@@ -179,7 +179,8 @@ Before modifying a subsystem:
 | **Authentication & Sessions** | [`skills/authentication/SKILL.md`](skills/authentication/SKILL.md) | `security`, `testing` |
 | **IAM, Roles & Permissions** | [`skills/authorization/SKILL.md`](skills/authorization/SKILL.md) | `security`, `database`, `testing` |
 | **Database Schema & Migrations** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | `testing` |
-| **Frontend UI & Forms** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | `authorization`, `testing` |
+| **Frontend UI & Forms** | [`skills/design/SKILL.md`](skills/design/SKILL.md), [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | `authorization`, `testing` |
+| **Landing & Marketing Pages** | [`skills/design/SKILL.md`](skills/design/SKILL.md) | `frontend` |
 | **Observability & Logging** | [`skills/observability/SKILL.md`](skills/observability/SKILL.md) | `api`, `testing` |
 | **Object Storage & Uploads** | [`skills/storage/SKILL.md`](skills/storage/SKILL.md) | `validation`, `security`, `testing` |
 | **Dependency Modernization** | [`skills/dependencies/SKILL.md`](skills/dependencies/SKILL.md) | `testing`, `security` |
@@ -194,6 +195,7 @@ Before modifying a subsystem:
 | **Database** | [`skills/database/SKILL.md`](skills/database/SKILL.md) | PostgreSQL schema conventions, Drizzle ORM, migrations, deterministic seeding, and database integrity. |
 | **API** | [`skills/api/SKILL.md`](skills/api/SKILL.md) | Fastify route development, Zod type providers, OpenAPI documentation, structured logging, and error responses. |
 | **Frontend** | [`skills/frontend/SKILL.md`](skills/frontend/SKILL.md) | Next.js App Router, Tailwind CSS, TanStack Query, AuthContext, and permission-aware UI. |
+| **Design** | [`skills/design/SKILL.md`](skills/design/SKILL.md) | Visual design law — screen structure, colour tokens, typography, icons, spacing, and the states every screen owes the user. |
 | **Security** | [`skills/security/SKILL.md`](skills/security/SKILL.md) | Zero-trust input rules, server-side authorization, credential protection, and adversarial security testing. |
 | **Validation** | [`skills/validation/SKILL.md`](skills/validation/SKILL.md) | Runtime Zod validation schemas, business bounds, date ordering, and pagination limits. |
 | **Testing** | [`skills/testing/SKILL.md`](skills/testing/SKILL.md) | Testing doctrine, pyramid (unit, integration, API, security, smoke), AAA pattern, and coverage enforcement. |

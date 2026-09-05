@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
+
+/* FONTS:START — replaced wholesale when a theme is applied at generation time.
+   Edit freely; just keep the markers if you want `--theme` to keep working. */
+import { Inter, JetBrains_Mono } from 'next/font/google';
 
 const sans = Inter({
   subsets: ['latin'],
@@ -16,6 +17,7 @@ const mono = JetBrains_Mono({
   variable: '--font-mono',
   display: 'swap',
 });
+/* FONTS:END */
 
 export const metadata: Metadata = {
   title: 'Production Starter',
@@ -29,13 +31,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable}`}>
-      <body className="min-h-screen flex flex-col antialiased font-sans">
-        <Providers>
-          <Navbar />
-          {/* The only container in the tree. Pages lay out inside it. */}
-          <main className="flex-1 container py-10">{children}</main>
-          <Footer />
-        </Providers>
+      {/*
+        Chrome lives in the route-group layouts, not here. `(marketing)` gets a
+        public nav and footer, `(app)` gets the signed-in shell with a sidebar,
+        and `(auth)` gets a bare centred frame. A single global navbar was why
+        marketing content and app content used to sit on the same page.
+      */}
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

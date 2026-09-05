@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/app-shell/page-header';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -18,60 +18,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function DashboardPage() {
-  const { user, session, effectivePermissions, isAuthenticated, isLoading, isRoot, hasPermission } =
-    useAuth();
+  // The (app) layout has already established that there is a signed-in user, so
+  // this screen renders content only.
+  const { user, session, effectivePermissions, isRoot } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="max-w-3xl space-y-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="max-w-md space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in to continue</h1>
-        <p className="text-sm text-muted-foreground">
-          This page shows your account and the permissions it resolves to.
-        </p>
-        <div className="flex gap-2">
-          <Link href="/login">
-            <Button>Sign in</Button>
-          </Link>
-          <Link href="/signup">
-            <Button variant="outline">Create account</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const canAccessAdmin = isRoot || hasPermission('admin:access');
+  if (!user) return null;
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{user.name || user.email}</h1>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-        </div>
-        <div className="flex gap-2">
+    <>
+      <PageHeader
+        title={user.name || user.email}
+        description="Your account and the permissions it resolves to."
+        actions={
           <Link href="/profile">
             <Button variant="outline" size="sm">
               Edit profile
             </Button>
           </Link>
-          {canAccessAdmin && (
-            <Link href="/admin">
-              <Button size="sm">Admin</Button>
-            </Link>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -140,6 +105,6 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

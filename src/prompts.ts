@@ -1,10 +1,11 @@
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { validateProjectName } from './generator.js';
+import { THEMES, THEME_IDS, type ThemeId } from './themes.js';
 
 export interface PromptResult {
   projectName: string;
-  theme: 'neutral' | 'zinc' | 'violet' | 'rose';
+  theme: ThemeId;
   features: string[];
   databasePort: number;
   redisPort: number;
@@ -46,16 +47,19 @@ export async function runInteractivePrompts(
     projectName = nameInput;
   }
 
-  // 2. UI Theme & Style Palette
+  // 2. UI Theme
+  //
+  // Options come straight from the theme definitions so the labels can never
+  // drift from what actually gets generated. Each theme sets its own palette,
+  // type pairing, and corner radius.
   const themeSelect = await p.select({
-    message: 'Select a UI Theme & Color Palette for Next.js (shadcn/ui):',
+    message: 'Choose a look for the app:',
     initialValue: 'neutral',
-    options: [
-      { value: 'neutral', label: 'Neutral / Slate', hint: 'Modern dark & clean enterprise aesthetic' },
-      { value: 'zinc', label: 'Zinc / Emerald', hint: 'High-contrast developer dashboard theme' },
-      { value: 'violet', label: 'Violet / Indigo', hint: 'Sleek modern SaaS & application theme' },
-      { value: 'rose', label: 'Rose / Crimson', hint: 'Bold energetic visual palette' },
-    ],
+    options: THEME_IDS.map((id) => ({
+      value: id,
+      label: `${THEMES[id].label}  ${pc.dim(THEMES[id].fonts.sans.name)}`,
+      hint: THEMES[id].hint,
+    })),
   });
 
   if (p.isCancel(themeSelect)) {
@@ -127,7 +131,7 @@ export async function runInteractivePrompts(
 
   return {
     projectName,
-    theme: themeSelect as 'neutral' | 'zinc' | 'violet' | 'rose',
+    theme: themeSelect as ThemeId,
     features: featuresSelect as string[],
     databasePort: 5432,
     redisPort: 6379,

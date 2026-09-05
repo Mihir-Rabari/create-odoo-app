@@ -278,3 +278,83 @@ describe('Target directory safety', () => {
     }
   });
 });
+
+/**
+ * The theme flag was decorative until 1.2.0: it wrote `components.json`'s
+ * `baseColor`, which only affects later `npx shadcn add` runs, and left
+ * `globals.css` byte-identical. Every generated app looked the same whichever
+ * theme the user picked. These tests assert the choice reaches disk.
+ */
+describe('Theme application', () => {
+  const templateDir = path.resolve(__dirname, '..');
+
+  async function scaffold(theme: 'neutral' | 'zinc' | 'violet' | 'rose') {
+    const dir = path.join(os.tmpdir(), `create-odoo-app-theme-${theme}-${Date.now()}`);
+
+    const result = await generateProject({
+      projectName: `theme-${theme}`,
+      targetDir: dir,
+      templateDir,
+      skipInstall: true,
+      skipGit: true,
+      theme,
+    });
+
+    expect(result.success).toBe(true);
+
+    const read = (relative: string) =>
+      fs.promises.readFile(path.join(dir, relative), 'utf-8');
+
+    return {
+      dir,
+      css: await read('apps/web/src/app/globals.css'),
+      layout: await read('apps/web/src/app/layout.tsx'),
+      componentsJson: JSON.parse(await read('apps/web/components.json')),
+    };
+  }
+
+  it('writes the selected palette, radius, and fonts into the app', async () => {
+    const violet = await scaffold('violet');
+
+    try {
+      expect(violet.css).toContain('Theme: Violet & Indigo');
+      expect(violet.css).toContain('--radius: 0.75rem;');
+      expect(violet.css).toContain('--primary: 258 90% 61%;');
+      expect(violet.css).toContain('.dark {');
+
+      expect(violet.layout).toContain('Plus_Jakarta_Sans');
+      expect(violet.layout).toContain('FONTS:START');
+      expect(violet.layout).toContain('FONTS:END');
+
+      expect(violet.componentsJson.tailwind.baseColor).toBe('zinc');
+    } finally {
+      await fs.promises.rm(violet.dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('declares explicit weights for families with no variable version', async () => {
+    const zinc = await scaffold('zinc');
+
+    try {
+      // next/font/google throws at build time for a non-variable family
+      // declared without `weight`, so this is a build break, not a nit.
+      expect(zinc.layout).toContain('IBM_Plex_Sans');
+      expect(zinc.layout).toContain("weight: ['400', '500', '600', '700'],");
+      expect(zinc.layout).toContain("weight: ['400', '500'],");
+    } finally {
+      await fs.promises.rm(zinc.dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('produces visibly different apps for different themes', async () => {
+    const [zinc, rose] = [await scaffold('zinc'), await scaffold('rose')];
+
+    try {
+      expect(zinc.css).not.toEqual(rose.css);
+      expect(zinc.layout).not.toEqual(rose.layout);
+    } finally {
+      await fs.promises.rm(zinc.dir, { recursive: true, force: true });
+      await fs.promises.rm(rose.dir, { recursive: true, force: true });
+    }
+  }, 90_000);
+});
